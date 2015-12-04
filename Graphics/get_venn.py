@@ -1,5 +1,5 @@
 import rpy2.robjects
-import sys
+# import sys
 import csv
 import os
 import rpy2.robjects
@@ -7,6 +7,7 @@ from collections import OrderedDict, Counter
 from rpy2.robjects.packages import importr
 import itertools
 import argparse
+
 
 def main():
     
@@ -53,18 +54,17 @@ def main():
     base = importr("base")
     venn = importr("VennDiagram")
     grdevices = importr("grDevices")
-    corrs = {1: "class", 2: "cufflinks", 3: "stringtie", 4: "trinity", 5: "mikado"}
+    # corrs = {1: "class", 2: "cufflinks", 3: "stringtie", 4: "trinity", 5: "mikado"}
     corrs = dict((x+1, list(sets.keys())[x]) for x in range(len(sets.keys())))
     nums = dict()
-    #
-    for num  in corrs:
+
+    for num in corrs:
         cat = corrs[num]
         nums["area{0}".format(num)] = len(sets[cat])
         total.update(list(sets[cat]))
         if num < 5:
             total_wo_mikado.update(list(sets[cat]))
         print(cat.capitalize(), nums["area{0}".format(num)])
-
 
     print("Total", len(set.union(*sets.values())))
     print("Total w/o Mikado", len(set.union(*[sets[x] for x in sets if x != "mikado"])))
@@ -85,7 +85,6 @@ def main():
         print("Genes {0} by {1} methods ({2} cumulative)".format(args.type, num,
                                                                  cum_tot), tot)
 
-
     for num_combs in range(2,6):
         for comb in itertools.combinations(range(1,6), num_combs):
             index = "".join([str(x) for x in comb])
@@ -98,23 +97,28 @@ def main():
     grdevices.tiff(os.path.join(args.out_folder, "quintuple_{0}.new.tiff".format(args.type)),
                    width=960, height=960)
 
-    venn.draw_quintuple_venn( height=5000, width=5000,
-                   # This will be in alphabetical order X(
-                              fill = cols, 
-                              category = rpy2.robjects.vectors.StrVector([x.capitalize() for x in sets.keys()]),
-                              margin=0.2,
-                              cat_dist = rpy2.robjects.vectors.FloatVector([0.25, 0.3, 0.25, 0.25, 0.25]),
-                              cat_cex = 3,
-                              cat_col = rpy2.robjects.vectors.StrVector( ["darkblue", "purple", "darkgreen",
-                                                                          "darkorange", "darkred"]),
-                              cex = 2,
-                              **nums)
+    venn.draw_quintuple_venn(height=5000,
+                             width=5000,
+                             # This will be in alphabetical order X(
+                             fill=cols,
+                             category=rpy2.robjects.vectors.StrVector([x.capitalize() for x in sets.keys()]),
+                             margin=0.2,
+                             cat_dist=rpy2.robjects.vectors.FloatVector([0.25, 0.3, 0.25, 0.25, 0.25]),
+                             cat_cex=3,
+                             cat_col=rpy2.robjects.vectors.StrVector(["darkblue",
+                                                                      "purple",
+                                                                      "darkgreen",
+                                                                      "darkorange",
+                                                                      "darkred"]),
+                             cex=2,
+                             **nums)
     grdevices.dev_off()
 
-    grdevices.tiff(os.path.join(args.out_folder, "quadruple_{0}.new.tiff".format(args.type)),
+    grdevices.tiff(os.path.join(args.out_folder,
+                                "quadruple_{0}.new.tiff".format(args.type)),
                    width=960, height=960)
-    cols = rpy2.robjects.vectors.StrVector( ["lightblue", "purple", "green",
-                                             "chocolate2"])
+    cols = rpy2.robjects.vectors.StrVector(["lightblue", "purple", "green",
+                                            "chocolate2"])
 
     nums = dict((x, nums[x]) for x in nums.keys() if "5" not in x)
 
@@ -130,19 +134,20 @@ def main():
     title_vector.append("Trinity\n{0:,} genes ({1}%)".format(nums["area4"],
                                                            round(100*nums["area4"]/denominator,1)))
     
-    venn.draw_quad_venn( height=5000, width=5000,
-                         # This will be in alphabetical order X(
-                         fill = cols, 
-                         # category = rpy2.robjects.vectors.StrVector(["Class", "Cufflinks",
-                         #                                              "Stringtie", "Trinity"]),
-                         category = rpy2.robjects.vectors.StrVector(title_vector),
-                         margin=0.15,
-                         cat_dist = rpy2.robjects.vectors.FloatVector([0.32, 0.3, 0.2, 0.25]),
-                         cat_cex = 2.8,
-                         cat_col = rpy2.robjects.vectors.StrVector( ["darkblue", "purple", "darkgreen",
-                                             "chocolate4"]),
-                         cex = 2.2,
-                         **nums)
+    venn.draw_quad_venn(height=5000,
+                        width=5000,
+                        # This will be in alphabetical order X(
+                        fill=cols,
+                        # category = rpy2.robjects.vectors.StrVector(["Class", "Cufflinks",
+                        # "Stringtie", "Trinity"]),
+                        category=rpy2.robjects.vectors.StrVector(title_vector),
+                        margin=0.15,
+                        cat_dist=rpy2.robjects.vectors.FloatVector([0.32, 0.3, 0.2, 0.25]),
+                        cat_cex=2.8,
+                        cat_col=rpy2.robjects.vectors.StrVector(
+                            ["darkblue", "purple", "darkgreen", "chocolate4"]),
+                        cex = 2.2,
+                        **nums)
     grdevices.dev_off()
 
 main()
