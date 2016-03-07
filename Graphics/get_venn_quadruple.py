@@ -27,7 +27,7 @@ def main():
     first = True
 
     for val in sets:
-        if val == "mikado":
+        if val == "Mikado.py":
             file_val = "mikado_split"
         else:
             file_val = val
@@ -51,7 +51,7 @@ def main():
     base = importr("base")
     venn = importr("VennDiagram")
     grdevices = importr("grDevices")
-    # corrs = {1: "class", 2: "cufflinks", 3: "stringtie", 4: "trinity", 5: "mikado"}
+    # corrs = {1: "class", 2: "cufflinks", 3: "stringtie", 4: "trinity", 5: "Mikado.py"}
     corrs = dict((x+1, list(sets.keys())[x]) for x in range(len(sets.keys())))
     nums = dict()
 
@@ -63,7 +63,7 @@ def main():
         print(cat.capitalize(), nums["area{0}".format(num)])
 
     print("Total", len(set.union(*sets.values())))
-    print("Total w/o Mikado", len(set.union(*[sets[x] for x in sets if x != "mikado"])))
+    print("Total w/o Mikado", len(set.union(*[sets[x] for x in sets if x != "Mikado.py"])))
     #
 
     print("")
@@ -90,7 +90,7 @@ def main():
     nums = dict((x, nums[x]) for x in nums.keys() if "5" not in x)
 
     title_vector = []
-    denominator = len(set.union(*[sets[x] for x in sets if x != "mikado"]))
+    denominator = len(set.union(*[sets[x] for x in sets if x != "Mikado.py"]))
     print(nums.keys())
     title_vector.append("Class\n{0:,} genes ({1}%)".format(nums["area1"],
                                                          round(100*nums["area1"]/denominator,1)))

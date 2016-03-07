@@ -5,7 +5,7 @@ import sys
 import subprocess
 import shutil
 import argparse
-import mikado_lib
+import Mikado
 from collections import defaultdict
 import io
 
@@ -33,7 +33,7 @@ def main():
     args.reference.close()
     args.reference = args.reference.name    
     
-    logger = mikado_lib.utilities.log_utils.create_default_logger("inference")
+    logger = Mikado.utilities.log_utils.create_default_logger("inference")
     logger.setLevel("INFO")
 
     logger.info("""Starting to analyse the dataset.
@@ -68,7 +68,7 @@ Junctions: {juncs}""".format(cli=" ".join(sys.argv),
     exons = []
     with open("exons.gff", "w") as exon_out:
         with open(args.reference) as ref:
-            for line in mikado_lib.parsers.GFF.GFF3(ref):
+            for line in Mikado.parsers.GFF.GFF3(ref):
                 if line.feature == "exon":
                     count += 1
                     exons.append(line)
@@ -91,7 +91,7 @@ Junctions: {juncs}""".format(cli=" ".join(sys.argv),
     multiexonic_tids = set()
     for line in intron_creator.stdout:
         line = line.decode()
-        line = mikado_lib.parsers.GFF.GffLine(line)
+        line = Mikado.parsers.GFF.GffLine(line)
         if line.feature == "intron":
             key = (line.chrom, line.start, line.end)  # We do not keep the strand because it might be a non-canonical one
             reference_introns[key].append(line.parent[0])  # Store the name of the parent
@@ -116,7 +116,7 @@ Junctions: {juncs}""".format(cli=" ".join(sys.argv),
 
     found_introns = set()
     with open(args.portcullis) as portcullis:
-        for line in mikado_lib.parsers.GFF.GFF3(portcullis):
+        for line in Mikado.parsers.GFF.GFF3(portcullis):
             key = (line.chrom, line.start, line.end)
             found_introns.add(key)
 
@@ -155,7 +155,7 @@ Junctions: {juncs}""".format(cli=" ".join(sys.argv),
     with open(coverage_exon_out.name) as coverage_exon_out:
         for line in coverage_exon_out:
             fields = line.rstrip().split("\t")
-            gffline, coverage = mikado_lib.parsers.GFF.GffLine("\t".join(fields[:9])), float(fields[-1])
+            gffline, coverage = Mikado.parsers.GFF.GffLine("\t".join(fields[:9])), float(fields[-1])
             if coverage < 1:
                 with_uncovered_exons.add(gffline.parent[0])
 

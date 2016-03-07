@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
 
-# import os
 import argparse
 import csv
-# import bed12
-# from sklearn.cross_validation import cross_val_score
 import pickle
-from sklearn.ensemble import RandomForestClassifier
+import collections
+from sklearn.ensemble import RandomForestRegressor
 import numpy as np
-# import matplotlib.pyplot as plt
-from mikado_lib.scales.resultstorer import ResultStorer
-from mikado_lib.loci_objects import Transcript
-#
+import operator
+from Mikado.scales.resultstorer import ResultStorer
+from Mikado.loci_objects import Transcript
+import re
+# from sklearn.cross_validation import cross_val_score
 # from sklearn.datasets import make_classification
 # from sklearn.ensemble import ExtraTreesClassifier
+# import matplotlib.pyplot as plt
 
 
 class MetricEntry:
 
     metrics = [_ for _ in Transcript.get_available_metrics() if
-               _ not in ["tid", "parent", "score", "blast_score", "snowy_blast_score"]]
+               _ not in ["tid", "parent", "score", "snowy_blast_score", "best_bits"]]
 
     def __init__(self, row):
 
         self.__tid = row["tid"]
+        self.__locus = row["parent"]
 
         for key in self.metrics:
             if row[key].lower() == "true":
@@ -48,123 +49,16 @@ class MetricEntry:
         return self.metrics
 
     @property
+    def nb_features(self):
+        return len(self.metrics)
+
+    @property
     def tid(self):
         return self.__tid
 
-
-class TabEntry:
-    chrom = ""
-    start = 0
-    end = 0
-    left = 0
-    right = 0
-    strand = "?"
-    # M1 = "N"
-    M2 = 0
-    M3 = 0
-    M4 = 0
-    # M5 = 0
-    # M6 = 0
-    # M7 = 0
-    M8 = 0
-    M9 = 0
-    M10 = 0
-    M11 = 0.0
-    M12 = 0
-    M13 = 0
-    M14 = 0
-    # M15 = 0.0
-
-    def __init__(self):
-        self.data = []
-
-    def __str__(self):
-
-        line = [self.chrom,
-                self.start,
-                self.end,
-                self.left,
-                self.right,
-                self.strand,
-                self.M2,
-                self.M3,
-                self.M4,
-                self.M8,
-                self.M9,
-                self.M10,
-                self.M11,
-                self.M12,
-                self.M13,
-                self.M14]
-        return "    ".join([str(_) for _ in line])
-
-    def makeMatrixRow(self):
-        return [self.M2,
-                self.M3,
-                self.M4,
-                self.M8,
-                self.M9,
-                self.M10,
-                self.M11,
-                self.M12,
-                self.M13,
-                self.M14]
-
-    @staticmethod
-    def features():
-        return ["M2-nb-reads",
-                "M3-nb_dist_aln",
-                "M4-nb_rel_aln",
-                "M8-max_min_anc",
-                "M9-dif_anc",
-                "M10-dist_anc",
-                "M11-entropy",
-                "M12-maxmmes",
-                "M13-hammping5p",
-                "M14-hamming3p"]
-
-    @staticmethod
-    def featureAt(index):
-        return TabEntry.features()[index]
-
-    @staticmethod
-    def sortedFeatures(indicies):
-        f = TabEntry.features()
-        s=[]
-        for i in indicies:
-            s.append(f[i])
-        return s
-
-    @staticmethod
-    def nbMetrics():
-        return 10
-
-    @staticmethod
-    def create_from_tabline(line):
-
-        b = TabEntry()
-
-        parts = line.split("    ")
-
-        b.chrom = parts[2]
-        b.start = int(parts[4])
-        b.end = int(parts[5])
-        b.left = int(parts[6])
-        b.right = int(parts[7])
-        b.strand = parts[12]
-
-        b.M2 = int(parts[14])
-        b.M3 = int(parts[15])
-        b.M4 = int(parts[16])
-        b.M8 = int(parts[20])
-        b.M9 = int(parts[21])
-        b.M10 = int(parts[22])
-        b.M11 = float(parts[23])
-        b.M12 = int(parts[24])
-        b.M13 = int(parts[25])
-        b.M14 = int(parts[26])
-
-        return b
+    @property
+    def locus(self):
+        return self.__locus
 
 
 def load_tmap(tmap_file) -> dict:
@@ -211,27 +105,12 @@ def load_metrics(metrics_file) -> [MetricEntry]:
     return metrics
 
 
-# def loadtab(tabfile):
-#
-#     bed = list()
-#     tab = list()
-#     with open(tabfile) as f:
-#         # Skip header
-#         f.readline()
-#
-#         for line in f:
-#             line.strip()
-#             if len(line) > 1:
-#                 bed.append(bed12.BedEntry.create_from_tabline(line, False, False))
-#                 tab.append(TabEntry.create_from_tabline(line))
-#
-#     return bed, tab
-
-
 def main():
     parser = argparse.ArgumentParser("Script to build a random forest decision tree")
-    parser.add_argument("-t", "--tmap", help="The TMAP file with the comparison results.")
-    parser.add_argument("-m", "--metrics", help="The metrics file.")
+    parser.add_argument("-t", "--tmap", help="The TMAP file with the comparison results.",
+                        required=True)
+    parser.add_argument("-m", "--metrics", help="The metrics file.",
+                        required=True)
     # parser.add_argument("-r", "--reference", required=True, help="The reference BED file to compare against")
     # parser.add_argument("-o", "--output", required=True, help="The output prefix")
     args = parser.parse_args()
@@ -256,30 +135,37 @@ def main():
 
     for index, entry in enumerate(metrics):
         X[index] = entry.matrix_row
-        score = np.mean([tmap_results[entry.tid].j_f1,
-                         tmap_results[entry.tid].n_f1])
-        y.append(score)
+        if ".orf" in entry.tid:
+            tid = re.sub("\.orf[0-9]*$", "", entry.tid)
+        else:
+            tid = entry.tid
 
-    clf = RandomForestClassifier(n_estimators=int(len(MetricEntry.metrics)/3),
-                                 max_depth=None,
-                                 criterion="entropy",
-                                 n_jobs=1,
-                                 random_state=0)
+        if entry.tid in tmap_results:
+            score = np.mean([tmap_results[entry.tid].j_f1,
+                             tmap_results[entry.tid].n_f1])
+            y.append(score)
+        else:
+            y.append(0)
+
+    clf = RandomForestRegressor(n_estimators=int(len(MetricEntry.metrics)/3),
+                                max_depth=None,
+                                n_jobs=1,
+                                random_state=0)
 
     clf.fit(X, y)
     importances = clf.feature_importances_
     std = np.std([tree.feature_importances_ for tree in clf.estimators_], axis=0)
-    indices = np.argsort(importances)[::-1]
+    # indices = np.argsort(importances)[::-1]
+
+    order = sorted([(MetricEntry.metrics[_], 100 * importances[_]) for _ in range(X.shape[1])],
+                   key=operator.itemgetter(1), reverse=True)
 
     # Print the feature ranking
     print("Feature ranking:")
 
-    for f in range(X.shape[1]):
+    for rank, feature in enumerate(order, start=1):
         print("{0}, feature {1} ({2})".format(
-            f + 1,
-            MetricEntry.metrics[f],
-            importances[indices[f]]
-        ))
+            rank, feature[0], feature[1]))
 
     with open("forest.pickle", "wb") as forest:
         pickle.dump(clf, forest)
@@ -288,6 +174,22 @@ def main():
 
     with open("Xy.pickle", "wb") as xy:
         pickle.dump([X, y], xy)
+
+    parents = collections.defaultdict(list)
+    for m in metrics:
+        parents[m.locus].append((m.tid, m.matrix_row))
+
+    for parent, children in parents.items():
+        print(parent)
+        vals = [_[1] for _ in children]
+        proba = clf.predict(vals)
+        # scores = clf.predict(vals)
+        probs = sorted([(children[_][0], proba[_]) for _ in range(len(children))],
+                       key=operator.itemgetter(1), reverse=True)
+        print("\t", *probs, sep="\t\n")
+
+    # probs = clf.predict_proba(X)
+    # print(*probs)
 
     # Plot the feature importances of the forest
     # plt.figure()

@@ -2,9 +2,9 @@ import csv
 import argparse
 import numpy
 import sys
-from mikado_lib.scales.resultstorer import ResultStorer
-from mikado_lib.loci_objects.transcript import Transcript
-from mikado_lib.scales.assigner import Assigner
+from Mikado.scales.resultstorer import ResultStorer
+from Mikado.loci_objects.transcript import Transcript
+from Mikado.scales.assigner import Assigner
 # import multiprocessing
 from collections import defaultdict
 

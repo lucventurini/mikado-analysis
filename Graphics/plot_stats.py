@@ -8,7 +8,7 @@ import argparse
 def main():
 
     # Command line:
-    # /usr/local/bin/mikado.py compare -r reference.gff3 -p mikado.loci.gff3 \
+    # /usr/local/bin/Mikado.py compare -r reference.gff3 -p Mikado.py.loci.gff3 \
     # -o compare -l compare.log
     # 7 reference RNAs in 5 genes
     # 22 predicted RNAs in  14 genes
@@ -38,7 +38,7 @@ def main():
     #                    Missed genes: 0/5  (0.00%)
     #                     Novel genes: 5/14  (35.71%)
 
-    parser = argparse.ArgumentParser("Script to generate the plots for the mikado stats")
+    parser = argparse.ArgumentParser("Script to generate the plots for the Mikado.py stats")
     parser.add_argument("stat", type=argparse.FileType("r"),
                         nargs="+",
                         help="The Mikado stats file")
