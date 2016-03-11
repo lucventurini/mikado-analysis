@@ -1,0 +1,22 @@
+Class 8001
+Cufflinks 7569
+Stringtie 7245
+Trinity 6259
+Mikado 5704
+Total 10157
+Total w/o Mikado 10094
+## With Mikado
+Genes missing by 5 methods (5134 cumulative) 5134
+Genes missing by 4 methods (5529 cumulative) 395
+Genes missing by 3 methods (6406 cumulative) 877
+Genes missing by 2 methods (7552 cumulative) 1146
+Genes missing by 1 methods (10157 cumulative) 2605
+Genes missing by 0 methods (27416 cumulative) 17259
+
+## Without Mikado
+Genes missing by 4 methods (5244 cumulative) 5244
+Genes missing by 3 methods (6277 cumulative) 1033
+Genes missing by 2 methods (7459 cumulative) 1182
+Genes missing by 1 methods (10094 cumulative) 2635
+Genes missing by 0 methods (27416 cumulative) 17322
+dict_keys(['n34', 'n13', 'n124', 'n123', 'area1', 'n12', 'area3', 'area4', 'area2', 'n23', 'n134', 'n14', 'n234', 'n1234', 'n24'])

@@ -1,0 +1,22 @@
+Class 1659
+Cufflinks 2391
+Stringtie 2164
+Trinity 917
+Mikado 858
+Total 3720
+Total w/o Mikado 3554
+## With Mikado
+Genes fusion by 5 methods (207 cumulative) 207
+Genes fusion by 4 methods (597 cumulative) 390
+Genes fusion by 3 methods (1243 cumulative) 646
+Genes fusion by 2 methods (2222 cumulative) 979
+Genes fusion by 1 methods (3720 cumulative) 1498
+Genes fusion by 0 methods (27416 cumulative) 23696
+
+## Without Mikado
+Genes fusion by 4 methods (442 cumulative) 442
+Genes fusion by 3 methods (1101 cumulative) 659
+Genes fusion by 2 methods (2034 cumulative) 933
+Genes fusion by 1 methods (3554 cumulative) 1520
+Genes fusion by 0 methods (27416 cumulative) 23862
+dict_keys(['n14', 'n23', 'n124', 'n1234', 'n123', 'n24', 'n34', 'area4', 'area3', 'n134', 'area1', 'n234', 'n12', 'area2', 'n13'])
