@@ -1,0 +1,22 @@
+Class 12687
+Cufflinks 10370
+Stringtie 12817
+Trinity 13029
+Mikado 14388
+Total 15715
+Total w/o Mikado 15487
+## With Mikado
+Genes full by 5 methods (7622 cumulative) 7622
+Genes full by 4 methods (11509 cumulative) 3887
+Genes full by 3 methods (13530 cumulative) 2021
+Genes full by 2 methods (14915 cumulative) 1385
+Genes full by 1 methods (15715 cumulative) 800
+Genes full by 0 methods (27416 cumulative) 11701
+
+## Without Mikado
+Genes full by 4 methods (7812 cumulative) 7812
+Genes full by 3 methods (11774 cumulative) 3962
+Genes full by 2 methods (13830 cumulative) 2056
+Genes full by 1 methods (15487 cumulative) 1657
+Genes full by 0 methods (27416 cumulative) 11929
+dict_keys(['n124', 'area2', 'n1234', 'area3', 'area1', 'n234', 'n14', 'n12', 'n34', 'n123', 'n23', 'n13', 'n134', 'area4', 'n24'])
