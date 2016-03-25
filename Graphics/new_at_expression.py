@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+
+# coding: utf-8
+
+# In[12]:
 
 import sys
 import os
@@ -11,13 +14,12 @@ import rpy2.robjects
 from rpy2.robjects.packages import importr
 from rpy2.robjects import pandas2ri
 import numpy
+import collections
 
 pandas2ri.activate()
 
 
-def sort_values(key, dictionary):
-    return dictionary[key]["fpkm"]
-
+# In[21]:
 
 def generate_plot(dataframe, jpeg):
 
@@ -80,6 +82,8 @@ def generate_plot(dataframe, jpeg):
     grdevices.dev_off()
 
 
+# In[10]:
+
 def analyse_refmap(input_file, label, values):
     """
     Quick snippet to retrieve the ccodes from the RefMap
@@ -122,50 +126,104 @@ def analyse_refmap(input_file, label, values):
     return values
 
 
-def main():
+# In[13]:
 
-    parser = argparse.ArgumentParser("Script to create the merged ccode/FPKM input for Gemy's modified script.")
-    parser.add_argument("--quant_file", "-q",
-                        required=True,
-                        type=argparse.FileType("r"))
-    parser.add_argument("-l", "--labels", default=None, type=str,
-                        help="Labels for the input files, comma separated. Required.", required=True)
-    parser.add_argument("--out", nargs="?", type=str, default="expression.tiff",
-                        help="Optional output file name. Default: %(default)s")
-    parser.add_argument("input_files", help="The RefMap input files", nargs="+")
-    args = parser.parse_args()
 
-    args.labels = args.labels.split(",")
-    if len(args.labels) != len(args.input_files):
-        raise ValueError("Labels must be the same number as input files!")        
 
-    # Create data dictionary
-    values = dict()
 
-    # Retrieve FPKM
-    for row in csv.DictReader(args.quant_file, delimiter="\t"):
-        values[row["tracking_id"]]=dict()
-        values[row["tracking_id"]]["fpkm"] = float(row["FPKM"])
-        values[row["tracking_id"]]["tid"] = row["tracking_id"]
+# In[24]:
 
-    for input_file, label in zip(args.input_files, args.labels):
-        values = analyse_refmap(input_file, label, values)
+quant_file = "/usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/Arabidopsis/Alignments/Kallisto/Original/out_quant/abundance.tsv"
 
-    data = defaultdict(list)
+values = collections.defaultdict(dict)
+with open(quant_file) as ab:
+    for row in csv.DictReader(ab, delimiter="\t"):
+        values[row["target_id"]]["tid"] = row["target_id"]
+        values[row["target_id"]]["tpm"] = float(row["tpm"])
 
-    sorter = functools.partial(sort_values, **{"dictionary": values})
-    keys = None
-    for tid in values:
-        if keys is None:
-            print(values[tid].keys())
-            keys = values[tid].keys()
-        for key in values[tid]:
-            data[key].append(values[tid][key])
+refmaps = ["STAR/Mikado_compare/0.19/Class-compare.refmap",
+"STAR/Mikado_compare/0.19/Cufflinks-compare.refmap",
+"STAR/Mikado_compare/0.19/Stringtie-compare.refmap",
+"STAR/Mikado_compare/0.19/Trinity-compare.refmap",
+"STAR/Mikado_compare/0.19/ALL.combined.transcript-compare.refmap"]
+refmaps = [os.path.join(
+    "/usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/Arabidopsis/Assemblies", folder) for folder in refmaps]
 
-            #        out.writerow(values[tid])
-    data = pandas.DataFrame(data, columns=["tid", "fpkm"] + args.labels)
-    generate_plot(data, args.out)
+labels = ["STAR Class", "STAR Cufflinks", "STAR Stringtie", "STAR Trinity", "STAR ALL"]
 
-    return
+for input_file, label in zip(refmaps, labels):
+    values = analyse_refmap(input_file, label, values)
 
-main()
+
+# In[25]:
+
+data = collections.defaultdict(list)
+keys = None
+for tid in values:
+    if keys is None:
+        print(values[tid].keys())
+        keys = values[tid].keys()
+    for key in values[tid]:
+        data[key].append(values[tid][key])
+
+
+# In[26]:
+
+data = pandas.DataFrame(data, columns=["tid", "tpm"] + labels)
+
+
+# In[27]:
+
+data.head()
+
+
+# In[28]:
+
+generate_plot(data, os.path.join(os.environ["HOME"], "Desktop", "expression.tiff"))
+
+
+# In[36]:
+
+quant_file = "/usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/Arabidopsis/Alignments/Kallisto/Original/out_quant/abundance.tsv"
+
+th_values = collections.defaultdict(dict)
+with open(quant_file) as ab:
+    for row in csv.DictReader(ab, delimiter="\t"):
+        th_values[row["target_id"]]["tid"] = row["target_id"]
+        th_values[row["target_id"]]["tpm"] = float(row["tpm"])
+
+th_refmaps = ["Tophat/Mikado_compare/0.19/Class-compare.refmap",
+"Tophat/Mikado_compare/0.19/Cufflinks-compare.refmap",
+"Tophat/Mikado_compare/0.19/Stringtie-compare.refmap",
+"Tophat/Mikado_compare/0.19/Trinity-compare.refmap",
+"Tophat/Mikado_compare/0.19/ALL.combined.transcript-compare.refmap"]
+th_refmaps = [os.path.join(
+    "/usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/Arabidopsis/Assemblies", folder) for folder in refmaps]
+
+th_labels = ["TH Class", "TH Cufflinks", "TH Stringtie", "TH Trinity", "TH ALL"]
+
+for input_file, label in zip(th_refmaps, labels):
+    th_values = analyse_refmap(input_file, label, th_values)
+    
+th_data = collections.defaultdict(list)
+keys = None
+for tid in th_values:
+    if keys is None:
+        print(th_values[tid].keys())
+        keys = th_values[tid].keys()
+    for key in th_values[tid]:
+        th_data[key].append(th_values[tid][key])    
+    
+th_data = pandas.DataFrame(th_data, columns=["tid", "tpm"] + labels)    
+generate_plot(th_data, os.path.join(os.environ["HOME"], "Desktop", "expression.th.tiff"))
+
+
+# In[ ]:
+
+
+
+
+# In[ ]:
+
+
+
