@@ -10,7 +10,7 @@ import matplotlib.colors
 import numpy as np
 from collections import OrderedDict
 import matplotlib.ticker as ticker
-from math import ceil
+from math import ceil, floor
 
 
 __doc__ = """Script to automate the plots for the Mikado compare statistics"""
@@ -55,7 +55,7 @@ def main():
     figure, axes = plt.subplots(nrows=2,
                                 ncols=3,
                                 dpi=args.dpi, figsize=(8, 6))
-    figure.suptitle(args.title, fontsize=15)
+    figure.suptitle(args.title, fontsize=20, style="italic", family="serif")
 
     Xaxis = matplotlib.patches.FancyArrow(0.1, 0.19, 0.8, 0,
                                           width=0.0005,
@@ -71,10 +71,6 @@ def main():
 
     figure.text(0.85, 0.15, "$Precision$", ha="center", fontsize=15)
     figure.text(0.07, 0.8, "$Recall$", va="center", fontsize=15, rotation="vertical")
-
-
-    # plt.setp(axes, xticks=[0.1, 0.5, 0.9], xticklabels=['a', 'b', 'c'],
-    #          yticks=[1, 2, 3])
 
     name_ar = np.array([["Base", "Exon", "Intron"],
                         ["Intron chain", "Transcript", "Gene"]])
@@ -98,29 +94,36 @@ def main():
             stats[key][b"TopHat"] = []
 
     for name in args.star:
-        lines = [line.rstrip() for line in open(name)]
+        orig = "{}-compare.stats".format(name)
+        filtered = "{}-filtered_compare.stats".format(name)
+
+        orig_lines = [line.rstrip() for line in open(orig)]
+        filtered_lines = [line.rstrip() for line in open(filtered)]
         # In the stats we have precision as second and sensitivity as first,
         # we have to invert
         for index, line_index in enumerate([5, 7, 8, 9, 12, 15]):
+            precision = float(orig_lines[line_index].split(":")[1].split()[1])
+            recall = float(filtered_lines[line_index].split(":")[1].split()[0])
             stats[
                 # Name of the statistic:Base, Exon, etc
                 list(stats.keys())[index]][
-                b"STAR"].append(
-                (list(reversed([float(_) for _ in lines[line_index].split(":")[1].split()[:2]])))
-            )
+                b"STAR"].append((precision, recall))
 
     for name in args.tophat:
-        lines = [line.rstrip() for line in open(name)]
+        orig = "{}-compare.stats".format(name)
+        filtered = "{}-filtered_compare.stats".format(name)
+
+        orig_lines = [line.rstrip() for line in open(orig)]
+        filtered_lines = [line.rstrip() for line in open(filtered)]
         # In the stats we have precision as second and sensitivity as first,
         # we have to invert
         for index, line_index in enumerate([5, 7, 8, 9, 12, 15]):
+            precision = float(orig_lines[line_index].split(":")[1].split()[1])
+            recall = float(filtered_lines[line_index].split(":")[1].split()[0])
             stats[
                 # Name of the statistic:Base, Exon, etc
                 list(stats.keys())[index]][
-                b"TopHat"].append(
-                # Append a tuple of values, Precision and Recall
-                (list(reversed([float(_) for _ in lines[line_index].split(":")[1].split()[:2]])))
-            )
+                b"TopHat"].append((precision, recall))
 
     handles, labels = None, None
 
@@ -138,18 +141,21 @@ def main():
         plot.axis("scaled")
         # Select a suitable maximum
 
-        maximum = 10 * ceil(
-            min(100,
-                max(Xtop.max(), Xstar.max(), Ystar.max(), Ytop.max())
-                ) / 10.0)
+        minimum = max(0, 10 * (floor(
+                min(Xtop.min(), Xstar.min(), Ystar.min(), Ytop.min()
+                ) / 10.0) - 0.5))
 
-        plot.set_xlim(0, maximum)
-        plot.set_ylim(0, maximum)
+        maximum = min(100, 10 *(ceil(
+            max(Xtop.max(), Xstar.max(), Ystar.max(), Ytop.max()) / 10.0) + 0.5))
+        # maximum = 100
+
+        plot.set_xlim(minimum, maximum)
+        plot.set_ylim(minimum, maximum)
         __axes = plot.axes
-        __axes.xaxis.set_major_locator(ticker.MultipleLocator(ceil(maximum / 20) * 5))
-        __axes.xaxis.set_minor_locator(ticker.MultipleLocator(ceil(maximum / 100) * 5))
-        __axes.yaxis.set_major_locator(ticker.MultipleLocator(ceil(maximum / 20) * 5))
-        __axes.yaxis.set_minor_locator(ticker.MultipleLocator(ceil(maximum / 100) * 5))
+        __axes.xaxis.set_major_locator(ticker.MultipleLocator(ceil((maximum -minimum)/ 20) * 5))
+        __axes.xaxis.set_minor_locator(ticker.MultipleLocator(ceil((maximum -minimum)/ 100) * 5))
+        __axes.yaxis.set_major_locator(ticker.MultipleLocator(ceil((maximum - minimum)/ 20) * 5))
+        __axes.yaxis.set_minor_locator(ticker.MultipleLocator(ceil((maximum - minimum)/ 100) * 5))
 
         plot.plot(plot.get_xlim(), plot.get_ylim(), ls="--", c=".3")
 
@@ -188,4 +194,5 @@ def main():
     else:
         plt.savefig(args.out, format=args.format, dpi=args.dpi)
 
-main()
+if __name__ == "__main__":
+    main()
