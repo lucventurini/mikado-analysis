@@ -22,14 +22,20 @@ def split_comma(string):
 
 def main():
 
-    parser = argparse.ArgumentParser(__doc__)
+    parser = argparse.ArgumentParser(__doc__,
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--tophat", type=split_comma, required=True)
     parser.add_argument("--star", type=split_comma, required=True)
     parser.add_argument("--labels", type=split_comma, required=True)
-    parser.add_argument("--out", default=None)
+    parser.add_argument("--out", default=None, required=True)
     parser.add_argument("--format", default="svg", choices=["svg",
                                                             "pdf",
                                                             "png"])
+    parser.add_argument("-c", "--colours", "--colors", dest="colours",
+                        default=None, type=split_comma,
+                        help="Colours to be used. Defaults to use a colourmap")
+    parser.add_argument("-cm", "--colourmap", default="gist_rainbow",
+                        help="Colourmap to be used.")
     parser.add_argument("--dpi", default=600, type=int)
     parser.add_argument("--title", default="Mikado stats")
     args = parser.parse_args()
@@ -39,26 +45,32 @@ def main():
         parser.print_help()
         sys.exit(1)
 
+    if args.colours is not None:
+        if len(args.colours) != len(args.labels) or len(set(args.colours)) != len(args.colours):
+            print("Error, invalid number of unique colors specified")
+            parser.print_help()
+            sys.exit(1)
+
     stats = OrderedDict()
     figure, axes = plt.subplots(nrows=2,
                                 ncols=3,
-                                dpi=args.dpi, figsize=(10, 6))
+                                dpi=args.dpi, figsize=(8, 6))
     figure.suptitle(args.title, fontsize=15)
 
-    Xaxis = matplotlib.patches.FancyArrow(0.06, 0.16, 0.9, 0,
+    Xaxis = matplotlib.patches.FancyArrow(0.1, 0.19, 0.8, 0,
                                           width=0.0005,
                                           length_includes_head=True,
                                           transform=figure.transFigure, figure=figure,
                                           color="k")
-    Yaxis = matplotlib.patches.FancyArrow(0.06, 0.16, 0, 0.75,
+    Yaxis = matplotlib.patches.FancyArrow(0.1, 0.19, 0, 0.7,
                                           width=0.0005,
                                           length_includes_head=True,
                                           transform=figure.transFigure, figure=figure,
                                           color="k")
     figure.lines.extend([Xaxis, Yaxis])
 
-    figure.text(0.9, 0.13, "$Precision$", ha="center", fontsize=12)
-    figure.text(0.04, 0.75, "$Recall$", va="center", fontsize=12, rotation="vertical")
+    figure.text(0.85, 0.15, "$Precision$", ha="center", fontsize=15)
+    figure.text(0.07, 0.8, "$Recall$", va="center", fontsize=15, rotation="vertical")
 
 
     # plt.setp(axes, xticks=[0.1, 0.5, 0.9], xticklabels=['a', 'b', 'c'],
@@ -68,7 +80,7 @@ def main():
                         ["Intron chain", "Transcript", "Gene"]])
 
     color_normalizer = matplotlib.colors.Normalize(0, len(args.labels))
-    color_map = cm.get_cmap("gist_rainbow")
+    color_map = cm.get_cmap(args.colourmap)
     # mapper = cm.ScalarMappable(colors, "PuOr")
 
     for xrow in (0, 1):
@@ -129,7 +141,7 @@ def main():
         maximum = 10 * ceil(
             min(100,
                 max(Xtop.max(), Xstar.max(), Ystar.max(), Ytop.max())
-                ) / 10.0 )
+                ) / 10.0)
 
         plot.set_xlim(0, maximum)
         plot.set_ylim(0, maximum)
@@ -141,17 +153,22 @@ def main():
 
         plot.plot(plot.get_xlim(), plot.get_ylim(), ls="--", c=".3")
 
-
         for index, vals in enumerate(zip(Xtop, Ytop, args.labels)):
             x, y, label = vals
-            colour = color_map(color_normalizer(index))
+            if args.colours is not None:
+                colour = args.colours[index]
+            else:
+                colour = color_map(color_normalizer(index))
             plot.scatter(x, y, label="{0} (TopHat)".format(label), c=colour,
                          marker="^", edgecolor="k",
                          s=[100.0], alpha=.8)
 
         for index, vals in enumerate(zip(Xstar, Ystar, args.labels)):
             x, y, label = vals
-            colour = color_map(color_normalizer(index))
+            if args.colours is not None:
+                colour = args.colours[index]
+            else:
+                colour = color_map(color_normalizer(index))
             plot.scatter(x, y, label="{0} (STAR)".format(label), c=colour,
                          marker="o",
                          s=[100.0], alpha=.8)
@@ -164,10 +181,11 @@ def main():
                   scatterpoints=1,
                   ncol=4, fontsize=10)
     # Necessary to pad the superior title
-    plt.tight_layout(rect=[0, 0.15, 1, 0.95])
+    plt.tight_layout(h_pad=0,
+        rect=[0.1, 0.15, 0.9, 0.95])
     if args.out is None:
         plt.show()
     else:
-        plt.savefig(args.out, format=args.format, dpi=600)
+        plt.savefig(args.out, format=args.format, dpi=args.dpi)
 
 main()
