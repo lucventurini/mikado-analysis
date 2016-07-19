@@ -1,5 +1,5 @@
 import rpy2.robjects
-# import sys
+import sys
 import csv
 import os
 import rpy2.robjects
@@ -7,6 +7,8 @@ from collections import OrderedDict, Counter
 from rpy2.robjects.packages import importr
 import itertools
 import argparse
+import matplotlib.cm as cm
+import matplotlib.colors
 
 
 def main():
@@ -16,35 +18,40 @@ def main():
                         "--type",
                         choices=["missing", "full", "fusion"],
                         required=True)
-    parser.add_argument("-st", "--stringtie", required=True)
-    parser.add_argument("-cl", "--class", required=True)
-    parser.add_argument("-cu", "--cufflinks", required=True)
-    parser.add_argument("-tr", "--trinity", required=True)
-    parser.add_argument("-mk", "--mikado", required=False, default=None)
-    parser.add_argument("-o", "--out-folder", dest="out_folder",
-                        type=str, help="Output folder", default=".")
+    parser.add_argument("-r", "--refmap", required=True,
+                        nargs="+")
+    parser.add_argument("-l", "--labels", required=True,
+                        nargs="+")
+    parser.add_argument("-cm", "--colourmap", default="gist_rainbow",
+                        help="Colourmap to be used.")
+    parser.add_argument("-o", "--out",
+                        type=str, help="Output file", default="venn.svg")
+    parser.add_argument("--title", default="Venn Diagram")
     args = parser.parse_args()
 
-    sets = OrderedDict.fromkeys(["class", "cufflinks", "stringtie",
-                                 "trinity", "mikado"])
+    if len(args.refmap) != len(args.labels):
+        print("Incorrect number of labels specified!")
+        parser.print_help()
+        sys.exit(1)
+    elif len(args.refmap) > 5:
+        print("It is impossible for me to create a Venn plot with more than 5 circles.")
+        parser.print_help()
+        sys.exit(1)
+
+    sets = OrderedDict.fromkeys(args.labels)
     for k in sets:
         sets[k] = set()
 
     total = Counter()
-    total_wo_mikado = Counter()
     first = True
 
-    for val in sets:
-        if val == "mikado":
-            file_val = "mikado_split"
-        else:
-            file_val = val
-        tsv = csv.DictReader(open("{0}.refmap".format(file_val)), delimiter="\t")
+    # Update the sets for each gene and label
+    for val, refmap in zip(args.labels, args.refmap):
+        tsv = csv.DictReader(open("{0}".format(refmap)), delimiter="\t")
         for row in tsv:
             if first:
                 total.update([row["ref_gene"]])
-                total_wo_mikado.update([row["ref_gene"]])
-            if row["ccode"].lower() in ("na", "x", "p", "i")  and args.type == "missing":
+            if row["ccode"].lower() in ("na", "x", "p", "i") and args.type == "missing":
                 sets[val].add(row["ref_gene"])
             elif row["ccode"] in ("=", "_") and args.type == "full":
                 sets[val].add(row["ref_gene"])
@@ -55,13 +62,12 @@ def main():
         if first:
             for gid in total:
                 total[gid] = 0
-                total_wo_mikado[gid] = 0
+            first = False
 
     r = rpy2.robjects.r  # Start the R thread                                                                                       
     base = importr("base")
     venn = importr("VennDiagram")
     grdevices = importr("grDevices")
-    # corrs = {1: "class", 2: "cufflinks", 3: "stringtie", 4: "trinity", 5: "mikado"}
     corrs = dict((x+1, list(sets.keys())[x]) for x in range(len(sets.keys())))
     nums = dict()
 
@@ -69,92 +75,81 @@ def main():
         cat = corrs[num]
         nums["area{0}".format(num)] = len(sets[cat])
         total.update(list(sets[cat]))
-        if num < 5:
-            total_wo_mikado.update(list(sets[cat]))
         print(cat.capitalize(), nums["area{0}".format(num)])
 
     print("Total", len(set.union(*sets.values())))
-    print("Total w/o Mikado", len(set.union(*[sets[x] for x in sets if x != "mikado"])))
-    #
     counts = list(total.values())
-    print("## With Mikado")
-    for num in reversed(range(6)):
+
+    for num in range(len(args.labels), 0, -1):
         tot = counts.count(num)
-        cum_tot = sum( counts.count(x) for x in range(num+1, 6)) + tot
-        print("Genes {0} by {1} methods ({2} cumulative)".format(args.type, num,
-                                                                 cum_tot), tot)
+        cum_tot = sum(counts.count(x) for x in range(num+1, 6)) + tot
+        print("Genes {0} by {1} methods ({2} cumulative): {3}".format(
+            args.type, num, cum_tot, tot))
     print("")
-    print("## Without Mikado")
-    counts = list(total_wo_mikado.values())
-    for num in reversed(range(5)):
-        tot = counts.count(num)
-        cum_tot = sum( counts.count(x) for x in range(num+1, 5)) + tot
-        print("Genes {0} by {1} methods ({2} cumulative)".format(args.type, num,
-                                                                 cum_tot), tot)
 
-    for num_combs in range(2,6):
-        for comb in itertools.combinations(range(1,6), num_combs):
-            index = "".join([str(x) for x in comb])
-            curr_sets = [sets[corrs[num]] for num in comb]
-            nums["n{0}".format(index)] = len(set.intersection(*curr_sets))
+    if len(args.labels) == 2:
+        nums["cross.area"] = len(set.intersection(
+            sets[corrs[1]], sets[corrs[2]]))
+    else:
+        for num_combs in range(2, len(args.labels) + 1):
+            for comb in itertools.combinations(range(1, len(args.labels) + 1), num_combs):
+                print(comb)
+                index = "".join([str(x) for x in comb])
+                curr_sets = [sets[corrs[num]] for num in comb]
+                nums["n{0}".format(index)] = len(set.intersection(*curr_sets))
 
-    cols = rpy2.robjects.vectors.StrVector( ["lightblue", "purple", "green",
-                                             "orange", "red"])
+    # for num_combs in range(2,6):
+    #     for comb in itertools.combinations(range(1,6), num_combs):
+    #         index = "".join([str(x) for x in comb])
+    #         curr_sets = [sets[corrs[num]] for num in comb]
+    #         nums["n{0}".format(index)] = len(set.intersection(*curr_sets))
 
-    grdevices.tiff(os.path.join(args.out_folder, "quintuple_{0}.new.tiff".format(args.type)),
-                   width=960, height=960)
+    # Get the colours from the ColorMap
+    # return
+    color_normalizer = matplotlib.colors.Normalize(0, len(args.labels))
+    color_map = cm.get_cmap(args.colourmap)
+    cols = [matplotlib.colors.rgb2hex(color_map(color_normalizer(index))) for index in range(len(args.labels))]
+    cols = rpy2.robjects.vectors.StrVector(cols)
+    #
 
-    venn.draw_quintuple_venn(height=5000,
-                             width=5000,
-                             # This will be in alphabetical order X(
-                             fill=cols,
-                             category=rpy2.robjects.vectors.StrVector([x.capitalize() for x in sets.keys()]),
-                             margin=0.2,
-                             cat_dist=rpy2.robjects.vectors.FloatVector([0.25, 0.3, 0.25, 0.25, 0.25]),
-                             cat_cex=3,
-                             cat_col=rpy2.robjects.vectors.StrVector(["darkblue",
-                                                                      "purple",
-                                                                      "darkgreen",
-                                                                      "darkorange",
-                                                                      "darkred"]),
-                             cex=2,
-                             **nums)
-    grdevices.dev_off()
+    if len(args.labels) == 1:
+        draw_function = venn.draw_single_venn
+    elif len(args.labels) == 2:
+        draw_function = venn.draw_pairwise_venn
+    elif len(args.labels) == 3:
+        draw_function = venn.draw_triple_venn
+    elif len(args.labels) == 4:
+        draw_function = venn.draw_quad_venn
+    else:
+        draw_function = venn.draw_quintuple_venn
 
-    grdevices.tiff(os.path.join(args.out_folder,
-                                "quadruple_{0}.new.tiff".format(args.type)),
-                   width=960, height=960)
-    cols = rpy2.robjects.vectors.StrVector(["lightblue", "purple", "green",
-                                            "chocolate2"])
+    distances = {
+        1: [0.1],
+        2: [0.1, 0.1],
+        3: [0.1, 0.1, 0.1],
+        4: [0.25, 0.25, 0.15, 0.15],
+        5: [0.2, 0.3, 0.2, 0.25, 0.25]
+    }
 
-    nums = dict((x, nums[x]) for x in nums.keys() if "5" not in x)
+    # draw_function = venn.venn_diagram
 
-    title_vector = []
-    denominator = len(set.union(*[sets[x] for x in sets if x != "mikado"]))
-    print(nums.keys())
-    title_vector.append("Class\n{0:,} genes ({1}%)".format(nums["area1"],
-                                                         round(100*nums["area1"]/denominator,1)))
-    title_vector.append("Cufflinks\n{0:,} genes ({1}%)".format(nums["area2"],
-                                                             round(100*nums["area2"]/denominator,1)))
-    title_vector.append("Stringtie\n{0:,} genes ({1}%)".format(nums["area3"],
-                                                             round(100*nums["area3"]/denominator,1)))
-    title_vector.append("Trinity\n{0:,} genes ({1}%)".format(nums["area4"],
-                                                           round(100*nums["area4"]/denominator,1)))
-    
-    venn.draw_quad_venn(height=5000,
-                        width=5000,
-                        # This will be in alphabetical order X(
-                        fill=cols,
-                        # category = rpy2.robjects.vectors.StrVector(["Class", "Cufflinks",
-                        # "Stringtie", "Trinity"]),
-                        category=rpy2.robjects.vectors.StrVector(title_vector),
-                        margin=0.15,
-                        cat_dist=rpy2.robjects.vectors.FloatVector([0.32, 0.3, 0.2, 0.25]),
-                        cat_cex=2.8,
-                        cat_col=rpy2.robjects.vectors.StrVector(
-                            ["darkblue", "purple", "darkgreen", "chocolate4"]),
-                        cex = 2.2,
-                        **nums)
+    drawn = draw_function(height=4000, width=4000,
+                          fill=cols,
+                          category=rpy2.robjects.vectors.StrVector([x.capitalize() for x in sets.keys()]),
+                          margin=0.2,
+                          cat_dist=rpy2.robjects.vectors.FloatVector(distances[len(args.labels)]),
+                          cat_cex=3,
+                          cat_col=cols,
+                          cex=2,
+                          cex_main=args.title,
+                          # main_pos=rpy2.robjects.vectors.FloatVector([2500, 100]),
+                          **nums)
+
+    gridExtra = importr("gridExtra")
+    grid = importr("grid")
+    grdevices.tiff(args.out, width=960, height=960)
+    gridExtra.grid_arrange(grid.gTree(children=drawn),
+                           top=grid.textGrob(args.title, gp=grid.gpar(fontsize=50)))
     grdevices.dev_off()
 
 main()
