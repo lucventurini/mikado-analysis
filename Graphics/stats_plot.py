@@ -24,9 +24,12 @@ def main():
 
     parser = argparse.ArgumentParser(__doc__,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--tophat", type=split_comma, required=True)
-    parser.add_argument("--star", type=split_comma, required=True)
-    parser.add_argument("--labels", type=split_comma, required=True)
+    parser.add_argument("--tophat", nargs=2, action="append", required=True,
+                        help="For each invocation, specify the original and the filtered stats file from Compare.")
+    parser.add_argument("--star", nargs=2, action="append", required=True,
+                        help="For each invocation, specify the original and the filtered stats file from Compare.")
+    parser.add_argument("--labels", nargs="+", required=True,
+                        help="Labels to use. They must be in the same number and order of the star/tophat files.")
     parser.add_argument("--out", default=None, required=True)
     parser.add_argument("--format", default="svg", choices=["svg",
                                                             "pdf",
@@ -94,8 +97,9 @@ def main():
             stats[key][b"TopHat"] = []
 
     for name in args.star:
-        orig = "{}-compare.stats".format(name)
-        filtered = "{}-filtered_compare.stats".format(name)
+        orig, filtered = name
+        # orig = "{}-compare.stats".format(name)
+        # filtered = "{}-filtered_compare.stats".format(name)
 
         orig_lines = [line.rstrip() for line in open(orig)]
         filtered_lines = [line.rstrip() for line in open(filtered)]
@@ -110,8 +114,9 @@ def main():
                 b"STAR"].append((precision, recall))
 
     for name in args.tophat:
-        orig = "{}-compare.stats".format(name)
-        filtered = "{}-filtered_compare.stats".format(name)
+        orig, filtered = name
+        # orig = "{}-compare.stats".format(name)
+        # filtered = "{}-filtered_compare.stats".format(name)
 
         orig_lines = [line.rstrip() for line in open(orig)]
         filtered_lines = [line.rstrip() for line in open(filtered)]

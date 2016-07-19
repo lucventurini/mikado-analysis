@@ -12,14 +12,21 @@ import argparse
 def main():
     
     parser = argparse.ArgumentParser("Script to create the Venn Plots")
-    parser.add_argument("-t", "--type", choices = ["missing", "full", "fusion"],
+    parser.add_argument("-t",
+                        "--type",
+                        choices=["missing", "full", "fusion"],
                         required=True)
+    parser.add_argument("-st", "--stringtie", required=True)
+    parser.add_argument("-cl", "--class", required=True)
+    parser.add_argument("-cu", "--cufflinks", required=True)
+    parser.add_argument("-tr", "--trinity", required=True)
+    parser.add_argument("-mk", "--mikado", required=False, default=None)
     parser.add_argument("-o", "--out-folder", dest="out_folder",
                         type=str, help="Output folder", default=".")
     args = parser.parse_args()
 
     sets = OrderedDict.fromkeys(["class", "cufflinks", "stringtie",
-                                 "trinity", "Mikado.py"])
+                                 "trinity", "mikado"])
     for k in sets:
         sets[k] = set()
 
@@ -28,7 +35,7 @@ def main():
     first = True
 
     for val in sets:
-        if val == "Mikado.py":
+        if val == "mikado":
             file_val = "mikado_split"
         else:
             file_val = val
@@ -54,7 +61,7 @@ def main():
     base = importr("base")
     venn = importr("VennDiagram")
     grdevices = importr("grDevices")
-    # corrs = {1: "class", 2: "cufflinks", 3: "stringtie", 4: "trinity", 5: "Mikado.py"}
+    # corrs = {1: "class", 2: "cufflinks", 3: "stringtie", 4: "trinity", 5: "mikado"}
     corrs = dict((x+1, list(sets.keys())[x]) for x in range(len(sets.keys())))
     nums = dict()
 
@@ -67,7 +74,7 @@ def main():
         print(cat.capitalize(), nums["area{0}".format(num)])
 
     print("Total", len(set.union(*sets.values())))
-    print("Total w/o Mikado", len(set.union(*[sets[x] for x in sets if x != "Mikado.py"])))
+    print("Total w/o Mikado", len(set.union(*[sets[x] for x in sets if x != "mikado"])))
     #
     counts = list(total.values())
     print("## With Mikado")
@@ -123,7 +130,7 @@ def main():
     nums = dict((x, nums[x]) for x in nums.keys() if "5" not in x)
 
     title_vector = []
-    denominator = len(set.union(*[sets[x] for x in sets if x != "Mikado.py"]))
+    denominator = len(set.union(*[sets[x] for x in sets if x != "mikado"]))
     print(nums.keys())
     title_vector.append("Class\n{0:,} genes ({1}%)".format(nums["area1"],
                                                          round(100*nums["area1"]/denominator,1)))
