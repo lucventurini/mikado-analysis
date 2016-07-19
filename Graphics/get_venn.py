@@ -149,7 +149,7 @@ def main():
     grid = importr("grid")
     grdevices.tiff(args.out, width=960, height=960)
     gridExtra.grid_arrange(grid.gTree(children=drawn),
-                           top=grid.textGrob(args.title, gp=grid.gpar(fontsize=50)))
+                           top=grid.textGrob(args.title, gp=grid.gpar(fontsize=30)))
     grdevices.dev_off()
 
 main()
