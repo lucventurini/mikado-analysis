@@ -29,9 +29,9 @@ def main():
 
     parser = argparse.ArgumentParser(__doc__,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--tophat", nargs="+", action="append", required=True,
+    parser.add_argument("--tophat", nargs="+", required=True,
                         help="For each invocation, specify the original and the filtered stats file from Compare.")
-    parser.add_argument("--star", nargs="+", action="append", required=True,
+    parser.add_argument("--star", nargs="+", required=True,
                         help="For each invocation, specify the original and the filtered stats file from Compare.")
     parser.add_argument("--labels", nargs="+", required=True,
                         help="Labels to use. They must be in the same number and order of the star/tophat files.")
@@ -50,7 +50,14 @@ def main():
 
     if (len(args.tophat) != len(args.star) or len(args.labels) != int(len(args.star) / 2) or
             len(args.star) % 2 != 0):
-        print("Error, labels and stats files are not the same number")
+        print(
+            "Error, labels and stats files are not the same number \
+            (TH: {}, STAR: {}, Labels: {})\n\
+             TH: {}\n\
+             STAR: {}\n\
+            Labels: {}".format(
+                len(args.tophat), len(args.star), len(args.labels),
+            args.tophat, args.star, args.labels))
         parser.print_help()
         sys.exit(1)
 
@@ -67,7 +74,7 @@ def main():
     figure.suptitle("${}$".format(args.title),
                     fontsize=20, style="italic", family="serif")
 
-    Xaxis = matplotlib.patches.FancyArrow(0.1, 0.19, 0.8, 0,
+    Xaxis = matplotlib.patches.FancyArrow(0.1, 0.19, 0.89, 0,
                                           width=0.0005,
                                           length_includes_head=True,
                                           transform=figure.transFigure, figure=figure,
@@ -79,7 +86,7 @@ def main():
                                           color="k")
     figure.lines.extend([Xaxis, Yaxis])
 
-    figure.text(0.85, 0.15, "$Precision$", ha="center", fontsize=15)
+    figure.text(0.92, 0.21, "$Precision$", ha="center", fontsize=15)
     figure.text(0.07, 0.8, "$Recall$", va="center", fontsize=15, rotation="vertical")
 
     name_ar = np.array([["Base", "Exon", "Intron"],
@@ -94,7 +101,7 @@ def main():
             key = name_ar[xrow, yrow]
             plot = axes[xrow, yrow]
             plot.grid(True)
-            plot.set_title("{} level".format(key), fontsize=12)
+            plot.set_title("{} level".format(key), fontsize=10)
 
             # plot.set_xlabel("Precision", fontsize=10)
             # plot.set_ylabel("Recall", fontsize=10)
@@ -103,7 +110,10 @@ def main():
             stats[key][b"STAR"] = []
             stats[key][b"TopHat"] = []
 
-    for name in grouper(args.star, 2):
+    print(*args.star, sep="\n")
+
+    for label, name in zip(args.labels, grouper(args.star, 2)):
+        print(label, name)
         orig, filtered = name
         # orig = "{}-compare.stats".format(name)
         # filtered = "{}-filtered_compare.stats".format(name)
@@ -120,7 +130,8 @@ def main():
                 list(stats.keys())[index]][
                 b"STAR"].append((precision, recall))
 
-    for name in grouper(args.star, 2):
+    for label, name in zip(args.labels, grouper(args.tophat, 2)):
+        print(label, name)
         orig, filtered = name
         # orig = "{}-compare.stats".format(name)
         # filtered = "{}-filtered_compare.stats".format(name)
@@ -150,26 +161,33 @@ def main():
         Xstar = np.array([_[0] for _ in star_values])
         Ystar = np.array([_[1] for _ in star_values])
 
-        plot.axis("scaled")
+        # plot.axis("scaled")
         # Select a suitable maximum
 
-        minimum = max(0, 10 * (floor(
-                min(Xtop.min(), Xstar.min(), Ystar.min(), Ytop.min()
-                ) / 10.0) - 0.5))
+        x_minimum = max(0, 10 * (floor(min(Xtop.min(), Xstar.min()) / 10.0) - 0.5))
+        y_minimum = max(0, 10 * (floor(min(Ytop.min(), Ystar.min()) / 10.0) - 0.5))
 
-        maximum = min(100, 10 *(ceil(
-            max(Xtop.max(), Xstar.max(), Ystar.max(), Ytop.max()) / 10.0) + 0.5))
+        x_maximum = min(100, 10 * (ceil(max(Xtop.max(), Xstar.max()) / 10.0) + 0.5))
+        y_maximum = min(100, 10 * (ceil(max(Ytop.max(), Ystar.max()) / 10.0) + 0.5))
+
+        # minimum = max(0, 10 * (floor(
+        #         min(Xtop.min(), Xstar.min(), Ystar.min(), Ytop.min()
+        #         ) / 10.0) - 0.5))
+        # maximum = min(100, 10 *(ceil(
+        #     max(Xtop.max(), Xstar.max(), Ystar.max(), Ytop.max()) / 10.0) + 0.5))
         # maximum = 100
 
-        plot.set_xlim(minimum, maximum)
-        plot.set_ylim(minimum, maximum)
+        plot.set_xlim(x_minimum, x_maximum)
+        plot.set_ylim(y_minimum, y_maximum)
+        plot.tick_params(axis='both', which='major', labelsize=8)
         __axes = plot.axes
-        __axes.xaxis.set_major_locator(ticker.MultipleLocator(ceil((maximum -minimum)/ 20) * 5))
-        __axes.xaxis.set_minor_locator(ticker.MultipleLocator(ceil((maximum -minimum)/ 100) * 5))
-        __axes.yaxis.set_major_locator(ticker.MultipleLocator(ceil((maximum - minimum)/ 20) * 5))
-        __axes.yaxis.set_minor_locator(ticker.MultipleLocator(ceil((maximum - minimum)/ 100) * 5))
+        __axes.xaxis.set_major_locator(ticker.MultipleLocator(
+            ceil((x_maximum -x_minimum)/ 20) * 5))
+        __axes.xaxis.set_minor_locator(ticker.MultipleLocator(ceil((x_maximum -x_minimum)/ 100) * 5))
+        __axes.yaxis.set_major_locator(ticker.MultipleLocator(ceil((y_maximum - y_minimum)/ 20) * 5))
+        __axes.yaxis.set_minor_locator(ticker.MultipleLocator(ceil((y_maximum - y_minimum)/ 100) * 5))
 
-        plot.plot(plot.get_xlim(), plot.get_ylim(), ls="--", c=".3")
+        plot.plot(0, 1, ls="--", c=".3")
 
         for index, vals in enumerate(zip(Xtop, Ytop, args.labels)):
             x, y, label = vals
@@ -179,7 +197,7 @@ def main():
                 colour = color_map(color_normalizer(index))
             plot.scatter(x, y, label="{0} (TopHat)".format(label), c=colour,
                          marker="^", edgecolor="k",
-                         s=[100.0], alpha=.8)
+                         s=[50.0], alpha=.8)
 
         for index, vals in enumerate(zip(Xstar, Ystar, args.labels)):
             x, y, label = vals
@@ -189,7 +207,7 @@ def main():
                 colour = color_map(color_normalizer(index))
             plot.scatter(x, y, label="{0} (STAR)".format(label), c=colour,
                          marker="o",
-                         s=[100.0], alpha=.8)
+                         s=[50.0], alpha=.8)
 
         if handles is None:
             handles, labels = plot.get_legend_handles_labels()
@@ -197,10 +215,15 @@ def main():
     plt.figlegend(labels=labels,
                   loc="lower center", handles=handles,
                   scatterpoints=1,
-                  ncol=4, fontsize=10)
+                  ncol=3, fontsize=10)
     # Necessary to pad the superior title
-    plt.tight_layout(h_pad=0,
-        rect=[0.1, 0.15, 0.9, 0.95])
+    plt.tight_layout(pad=0.5,
+                     h_pad=1,
+                     w_pad=1,
+                     rect=[0.1,  # Left
+                           0.2,  # Bottom
+                           0.85,  # Right
+                           0.9])  # Top
     if args.out is None:
         plt.show()
     else:
