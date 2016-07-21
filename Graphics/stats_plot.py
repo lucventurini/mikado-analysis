@@ -29,9 +29,9 @@ def main():
 
     parser = argparse.ArgumentParser(__doc__,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--tophat", nargs=2, action="append", required=True,
+    parser.add_argument("--tophat", nargs="+", action="append", required=True,
                         help="For each invocation, specify the original and the filtered stats file from Compare.")
-    parser.add_argument("--star", nargs=2, action="append", required=True,
+    parser.add_argument("--star", nargs="+", action="append", required=True,
                         help="For each invocation, specify the original and the filtered stats file from Compare.")
     parser.add_argument("--labels", nargs="+", required=True,
                         help="Labels to use. They must be in the same number and order of the star/tophat files.")
@@ -48,7 +48,8 @@ def main():
     parser.add_argument("--title", default="Mikado stats")
     args = parser.parse_args()
 
-    if len(args.labels) != len(args.tophat) != len(args.star):
+    if (len(args.tophat) != len(args.star) or len(args.labels) != int(len(args.star) / 2) or
+            len(args.star) % 2 != 0):
         print("Error, labels and stats files are not the same number")
         parser.print_help()
         sys.exit(1)
