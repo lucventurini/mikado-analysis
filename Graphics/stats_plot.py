@@ -11,7 +11,7 @@ import numpy as np
 from collections import OrderedDict
 import matplotlib.ticker as ticker
 from math import ceil, floor
-
+from itertools import zip_longest
 
 __doc__ = """Script to automate the plots for the Mikado compare statistics"""
 
@@ -19,6 +19,11 @@ __doc__ = """Script to automate the plots for the Mikado compare statistics"""
 def split_comma(string):
     return string.split(",")
 
+def grouper(iterable, n, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)
 
 def main():
 
@@ -58,7 +63,8 @@ def main():
     figure, axes = plt.subplots(nrows=2,
                                 ncols=3,
                                 dpi=args.dpi, figsize=(8, 6))
-    figure.suptitle(args.title, fontsize=20, style="italic", family="serif")
+    figure.suptitle("${}$".format(args.title),
+                    fontsize=20, style="italic", family="serif")
 
     Xaxis = matplotlib.patches.FancyArrow(0.1, 0.19, 0.8, 0,
                                           width=0.0005,
@@ -96,7 +102,7 @@ def main():
             stats[key][b"STAR"] = []
             stats[key][b"TopHat"] = []
 
-    for name in args.star:
+    for name in grouper(args.star, 2):
         orig, filtered = name
         # orig = "{}-compare.stats".format(name)
         # filtered = "{}-filtered_compare.stats".format(name)
@@ -113,7 +119,7 @@ def main():
                 list(stats.keys())[index]][
                 b"STAR"].append((precision, recall))
 
-    for name in args.tophat:
+    for name in grouper(args.star, 2):
         orig, filtered = name
         # orig = "{}-compare.stats".format(name)
         # filtered = "{}-filtered_compare.stats".format(name)
