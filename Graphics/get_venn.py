@@ -93,7 +93,7 @@ def main():
     else:
         for num_combs in range(2, len(args.labels) + 1):
             for comb in itertools.combinations(range(1, len(args.labels) + 1), num_combs):
-                print(comb)
+                # print(comb)
                 index = "".join([str(x) for x in comb])
                 curr_sets = [sets[corrs[num]] for num in comb]
                 nums["n{0}".format(index)] = len(set.intersection(*curr_sets))
