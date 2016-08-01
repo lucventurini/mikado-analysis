@@ -51,7 +51,7 @@ def main():
         for row in tsv:
             if first:
                 total.update([row["ref_gene"]])
-            if row["ccode"].lower() in ("na", "x", "p", "i") and args.type == "missing":
+            if row["ccode"].lower() in ("na", "x", "p", "i", "ri") and args.type == "missing":
                 sets[val].add(row["ref_gene"])
             elif row["ccode"] in ("=", "_") and args.type == "full":
                 sets[val].add(row["ref_gene"])
