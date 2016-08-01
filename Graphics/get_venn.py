@@ -132,6 +132,9 @@ def main():
     }
 
     # draw_function = venn.venn_diagram
+    gridExtra = importr("gridExtra")
+    grid = importr("grid")
+    grdevices.tiff(args.out, width=960, height=960)
 
     drawn = draw_function(height=4000, width=4000,
                           fill=cols,
@@ -144,10 +147,6 @@ def main():
                           cex_main=args.title,
                           # main_pos=rpy2.robjects.vectors.FloatVector([2500, 100]),
                           **nums)
-
-    gridExtra = importr("gridExtra")
-    grid = importr("grid")
-    grdevices.tiff(args.out, width=960, height=960)
     gridExtra.grid_arrange(grid.gTree(children=drawn),
                            top=grid.textGrob(args.title, gp=grid.gpar(fontsize=30)))
     grdevices.dev_off()
