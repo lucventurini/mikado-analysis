@@ -37,6 +37,8 @@ def main():
     parser.add_argument("--labels", nargs="+", required=True,
                         help="Labels to use. They must be in the same number and order of the star/tophat files.")
     parser.add_argument("--out", default=None, required=True)
+    parser.add_argument("--opaque", action="set_false", default=True,
+                        help="Flag. If set, the background of the figure will be white and opaque.")
     parser.add_argument("--format", default="svg", choices=["svg",
                                                             "pdf",
                                                             "png"])
@@ -232,7 +234,7 @@ def main():
     if args.out is None:
         plt.show()
     else:
-        plt.savefig(args.out, format=args.format, dpi=args.dpi)
+        plt.savefig(args.out, format=args.format, dpi=args.dpi, transparent=args.opaque)
 
 if __name__ == "__main__":
     main()
