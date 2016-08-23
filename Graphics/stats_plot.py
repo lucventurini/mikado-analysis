@@ -25,6 +25,7 @@ def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=fillvalue)
 
+
 def main():
 
     parser = argparse.ArgumentParser(__doc__,
@@ -40,7 +41,7 @@ def main():
                                                             "pdf",
                                                             "png"])
     parser.add_argument("-c", "--colours", "--colors", dest="colours",
-                        default=None, type=split_comma,
+                        default=None, nargs="+",
                         help="Colours to be used. Defaults to use a colourmap")
     parser.add_argument("-cm", "--colourmap", default="gist_rainbow",
                         help="Colourmap to be used.")
@@ -111,8 +112,12 @@ def main():
             stats[key][b"TopHat"] = []
 
     print(*args.star, sep="\n")
+    
+    # We presume we have FIRST all original, THEN all filtered.
+    args.star = list(zip(args.star[:len(args.labels)], args.star[len(args.labels):]))
+    args.tophat = list(zip(args.tophat[:len(args.labels)], args.tophat[len(args.labels):]))
 
-    for label, name in zip(args.labels, grouper(args.star, 2)):
+    for label, name in zip(args.labels, args.star):
         print(label, name)
         orig, filtered = name
         # orig = "{}-compare.stats".format(name)
@@ -130,7 +135,7 @@ def main():
                 list(stats.keys())[index]][
                 b"STAR"].append((precision, recall))
 
-    for label, name in zip(args.labels, grouper(args.tophat, 2)):
+    for label, name in zip(args.labels, args.tophat):
         print(label, name)
         orig, filtered = name
         # orig = "{}-compare.stats".format(name)
