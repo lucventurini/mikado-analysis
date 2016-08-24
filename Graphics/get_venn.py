@@ -134,25 +134,27 @@ def main():
         1: [0.1],
         2: [0.1, 0.1],
         3: [0.1, 0.1, 0.1],
-        4: [0.25, 0.25, 0.15, 0.15],
+        4: [0.3, 0.25, 0.15, 0.15],
         5: [0.2, 0.3, 0.2, 0.25, 0.25]
     }
 
     # draw_function = venn.venn_diagram
     gridExtra = importr("gridExtra")
     grid = importr("grid")
+    dev_args = {"width": 960, "height": 960}
     if args.format == "tiff":
         device = grdevices.tiff
     elif args.format == "png":
         device = grdevices.png
+        dev_args["bg"] = "transparent"
     else:
         device = grdevices.svg
     
-    device(args.out, width=960, height=960)
+    device(args.out, **dev_args)
 
     drawn = draw_function(height=4000, width=4000,
-                          # fill=cols,
-                          category=rpy2.robjects.vectors.StrVector(["{} ({} genes)".format(x.capitalize(), len(sets[x])) for x in sets.keys()]),
+                          fill=cols,
+                          category=rpy2.robjects.vectors.StrVector(["{}\n({} genes)".format(x.capitalize(), len(sets[x])) for x in sets.keys()]),
                           margin=0.2,
                           cat_dist=rpy2.robjects.vectors.FloatVector(distances[len(args.labels)]),
                           cat_cex=3,

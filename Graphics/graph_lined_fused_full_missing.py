@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+
 text="""	Full	Missed	Fused
 CLASS (STAR)	13428	7901	1702
 CLASS (TopHat)	9493	10394	1300
