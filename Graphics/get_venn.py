@@ -115,6 +115,7 @@ def main():
         cols = [matplotlib.colors.rgb2hex(color_map(color_normalizer(index))) for index in range(len(args.labels))]
         cols = rpy2.robjects.vectors.StrVector(cols)
     else:
+        print(args.colours)
         cols = rpy2.robjects.vectors.StrVector(args.colours)
     #
 
