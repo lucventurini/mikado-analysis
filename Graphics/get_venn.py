@@ -24,8 +24,11 @@ def main():
                         nargs="+")
     parser.add_argument("-cm", "--colourmap", default="gist_rainbow",
                         help="Colourmap to be used.")
+    parser.add_argument("-c", "--colours", nargs="+",
+                        help="Colors to use.")
     parser.add_argument("-o", "--out",
                         type=str, help="Output file", default="venn.svg")
+    parser.add_argument("--format", choices=["svg", "tiff", "png"], default="tiff")
     parser.add_argument("--title", default="Venn Diagram")
     args = parser.parse_args()
 
@@ -106,10 +109,13 @@ def main():
 
     # Get the colours from the ColorMap
     # return
-    color_normalizer = matplotlib.colors.Normalize(0, len(args.labels))
-    color_map = cm.get_cmap(args.colourmap)
-    cols = [matplotlib.colors.rgb2hex(color_map(color_normalizer(index))) for index in range(len(args.labels))]
-    cols = rpy2.robjects.vectors.StrVector(cols)
+    if args.colours is None:
+        color_normalizer = matplotlib.colors.Normalize(0, len(args.labels))
+        color_map = cm.get_cmap(args.colourmap)
+        cols = [matplotlib.colors.rgb2hex(color_map(color_normalizer(index))) for index in range(len(args.labels))]
+        cols = rpy2.robjects.vectors.StrVector(cols)
+    else:
+        cols = rpy2.robjects.vectors.StrVector(args.colours)
     #
 
     if len(args.labels) == 1:
@@ -134,7 +140,14 @@ def main():
     # draw_function = venn.venn_diagram
     gridExtra = importr("gridExtra")
     grid = importr("grid")
-    grdevices.tiff(args.out, width=960, height=960)
+    if args.format == "tiff":
+        device = grdevices.tiff
+    elif args.format == "png":
+        device = grdevices.png
+    else:
+        device = grdevices.svg
+    
+    device(args.out, width=960, height=960)
 
     drawn = draw_function(height=4000, width=4000,
                           fill=cols,
