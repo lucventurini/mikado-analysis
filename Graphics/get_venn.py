@@ -151,8 +151,8 @@ def main():
     device(args.out, width=960, height=960)
 
     drawn = draw_function(height=4000, width=4000,
-                          fill=cols,
-                          category=rpy2.robjects.vectors.StrVector([x.capitalize() for x in sets.keys()]),
+                          # fill=cols,
+                          category=rpy2.robjects.vectors.StrVector(["{} ({} genes)".format(x.capitalize(), len(sets[x])) for x in sets.keys()]),
                           margin=0.2,
                           cat_dist=rpy2.robjects.vectors.FloatVector(distances[len(args.labels)]),
                           cat_cex=3,
