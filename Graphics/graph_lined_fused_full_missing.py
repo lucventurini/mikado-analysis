@@ -46,6 +46,8 @@ def main():
                 data["{} ({})".format(label, aligner)][num] = len(
                     data["{} ({})".format(label, aligner)][num])
 
+    print(**data, sep="\n")
+
     # for row in text.split("\n"):
     #     if row.startswith("\t"):
     #         continue
