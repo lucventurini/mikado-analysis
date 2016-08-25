@@ -29,6 +29,8 @@ def main():
     parser.add_argument("-o", "--out",
                         type=str, help="Output file", default="venn.svg")
     parser.add_argument("--format", choices=["svg", "tiff", "png"], default="tiff")
+    parser.add_argument("--transcripts", action="store_true", default=False,
+                        help="Flag. If set, Venn plotted against transcripts, not genes.")
     parser.add_argument("--title", default="Venn Diagram")
     args = parser.parse_args()
 
@@ -49,17 +51,23 @@ def main():
     first = True
 
     # Update the sets for each gene and label
+    if args.transcripts is True:
+        colname = "ref_id"
+        tag="transcripts"
+    else:
+        colname = "ref_gene"
+        tag = "genes"
     for val, refmap in zip(args.labels, args.refmap):
         tsv = csv.DictReader(open("{0}".format(refmap)), delimiter="\t")
         for row in tsv:
             if first:
-                total.update([row["ref_gene"]])
+                total.update([row[colname]])
             if row["ccode"].lower() in ("na", "x", "p", "i", "ri") and args.type == "missing":
-                sets[val].add(row["ref_gene"])
+                sets[val].add(row[colname])
             elif row["ccode"] in ("=", "_") and args.type == "full":
-                sets[val].add(row["ref_gene"])
+                sets[val].add(row[colname])
             elif row["ccode"][0] == "f" and args.type == "fusion":
-                sets[val].add(row["ref_gene"])
+                sets[val].add(row[colname])
             else:
                 continue
         if first:
@@ -130,13 +138,22 @@ def main():
     else:
         draw_function = venn.draw_quintuple_venn
 
-    distances = {
-        1: [0.1],
-        2: [0.1, 0.1],
-        3: [0.1, 0.1, 0.1],
-        4: [0.3, 0.25, 0.15, 0.15],
-        5: [0.2, 0.3, 0.2, 0.25, 0.25]
-    }
+    if not args.transcripts:
+        distances = {
+            1: [0.1],
+            2: [0.1, 0.1],
+            3: [0.1, 0.1, 0.1],
+            4: [0.3, 0.25, 0.15, 0.15],
+            5: [0.2, 0.3, 0.2, 0.25, 0.25]
+        }
+    else:
+        distances = {
+            1: [0.1],
+            2: [0.1, 0.1],
+            3: [0.1, 0.1, 0.1],
+            4: [0.35, 0.3, 0.2, 0.25],
+            5: [0.2, 0.3, 0.2, 0.25, 0.25]
+        }
 
     # draw_function = venn.venn_diagram
     gridExtra = importr("gridExtra")
@@ -154,7 +171,7 @@ def main():
 
     drawn = draw_function(height=4000, width=4000,
                           fill=cols,
-                          category=rpy2.robjects.vectors.StrVector(["{}\n({} genes)".format(x.capitalize(), len(sets[x])) for x in sets.keys()]),
+                          category=rpy2.robjects.vectors.StrVector(["{}\n({} {})".format(x.capitalize(), len(sets[x]), tag) for x in sets.keys()]),
                           margin=0.2,
                           cat_dist=rpy2.robjects.vectors.FloatVector(distances[len(args.labels)]),
                           cat_cex=3,

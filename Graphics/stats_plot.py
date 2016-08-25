@@ -222,7 +222,8 @@ def main():
     plt.figlegend(labels=labels,
                   loc="lower center", handles=handles,
                   scatterpoints=1,
-                  ncol=3, fontsize=10)
+                  ncol=3, fontsize=10,
+                  framealpha=0.5)
     # Necessary to pad the superior title
     plt.tight_layout(pad=0.5,
                      h_pad=1,
