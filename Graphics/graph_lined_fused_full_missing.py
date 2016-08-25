@@ -42,9 +42,9 @@ def main():
                         data["{} ({})".format(label, aligner)][2].add(row["ref_gene"])
                     elif row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
                         data["{} ({})".format(label, aligner)][1].add(row["ref_gene"])
-                for num in range(3):
-                    data["{} ({})".format(label, aligner)][num] = len(
-                        data["{} ({})".format(label, aligner)][num])
+            for num in range(3):
+                data["{} ({})".format(label, aligner)][num] = len(
+                    data["{} ({})".format(label, aligner)][num])
 
     # for row in text.split("\n"):
     #     if row.startswith("\t"):
