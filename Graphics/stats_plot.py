@@ -19,6 +19,7 @@ __doc__ = """Script to automate the plots for the Mikado compare statistics"""
 def split_comma(string):
     return string.split(",")
 
+
 def grouper(iterable, n, fillvalue=None):
     "Collect data into fixed-length chunks or blocks"
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
