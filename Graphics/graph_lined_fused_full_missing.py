@@ -31,14 +31,14 @@ def main():
     # Mikado (TopHat)	15721	6119	797
     # """
 
-    for label, star, th in zip(args.labels, args.tophat, args.star):
+    for label, star, th in zip(args.labels, args.star, args.tophat):
         for aligner, refmap in zip(["STAR", "TopHat"], [star, th]):
             data["{} ({})".format(label, aligner)] = [set(), set(), set()]
             with open(refmap) as refmap:
                 for row in csv.DictReader(refmap, delimiter="\t"):
                     if row["ccode"] in ("=", "_"):
                         data["{} ({})".format(label, aligner)][0].add(row["ref_id"])
-                    elif row["ccode"][0]=="f":
+                    elif row["ccode"][0] == "f":
                         data["{} ({})".format(label, aligner)][2].add(row["ref_id"])
                     elif row["ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
                         data["{} ({})".format(label, aligner)][1].add(row["ref_id"])
