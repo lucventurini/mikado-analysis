@@ -36,17 +36,17 @@ def main():
             data["{} ({})".format(label, aligner)] = [set(), set(), set()]
             with open(refmap) as refmap:
                 for row in csv.DictReader(refmap, delimiter="\t"):
-                    if row["best_ccode"] in ("=", "_"):
-                        data["{} ({})".format(label, aligner)][0].add(row["ref_gene"])
-                    elif row["best_ccode"][0]=="f":
-                        data["{} ({})".format(label, aligner)][2].add(row["ref_gene"])
-                    elif row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
-                        data["{} ({})".format(label, aligner)][1].add(row["ref_gene"])
+                    if row["ccode"] in ("=", "_"):
+                        data["{} ({})".format(label, aligner)][0].add(row["ref_id"])
+                    elif row["ccode"][0]=="f":
+                        data["{} ({})".format(label, aligner)][2].add(row["ref_id"])
+                    elif row["ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
+                        data["{} ({})".format(label, aligner)][1].add(row["ref_id"])
             for num in range(3):
                 data["{} ({})".format(label, aligner)][num] = len(
                     data["{} ({})".format(label, aligner)][num])
 
-    print(**data, sep="\n")
+    print(*data.items(), sep="\n")
 
     # for row in text.split("\n"):
     #     if row.startswith("\t"):
