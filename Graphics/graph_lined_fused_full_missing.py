@@ -19,8 +19,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--labels", nargs=5, required=True)
     parser.add_argument("-o", "--out", default=None)
-    parser.add_argument("--star", nargs=10)
-    parser.add_argument("--tophat", nargs=10)
+    parser.add_argument("--star", nargs=5)
+    parser.add_argument("--tophat", nargs=5)
     # parser.add_argument("refmap", nargs=10, type=argparse.FileType("rt"))
     args = parser.parse_args()
 
@@ -39,8 +39,8 @@ def main():
     # Mikado (TopHat)	15721	6119	797
     # """
 
-    for label, star, th in zip(args.labels, grouper(args.star, 2), grouper(args.tophat, 2)):
-        for aligner, (orig_refmap, filter_refmap) in zip(["STAR", "TopHat"], [star, th]):
+    for label, star, th in zip(args.labels, args.star, args.tophat):
+        for aligner, orig_refmap in zip(["STAR", "TopHat"], [star, th]):
             data["{} ({})".format(label, aligner)] = [set(), set(), set()]
             with open(orig_refmap) as refmap:
                 for row in csv.DictReader(refmap, delimiter="\t"):
@@ -48,10 +48,11 @@ def main():
                         data["{} ({})".format(label, aligner)][0].add(row["ref_gene"])
                     elif row["best_ccode"][0] == "f":
                         data["{} ({})".format(label, aligner)][2].add(row["ref_gene"])
-            with open(filter_refmap) as refmap:
-                for row in csv.DictReader(refmap, delimiter="\t"):
-                    if row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
+                    elif row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
                         data["{} ({})".format(label, aligner)][1].add(row["ref_gene"])
+            # with open(filter_refmap) as refmap:
+            #     for row in csv.DictReader(refmap, delimiter="\t"):
+
             for num in range(3):
                 data["{} ({})".format(label, aligner)][num] = len(
                     data["{} ({})".format(label, aligner)][num])
