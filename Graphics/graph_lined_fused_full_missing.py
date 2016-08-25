@@ -34,7 +34,7 @@ def main():
     for label, star, th in zip(args.labels, args.tophat, args.star):
         for aligner, refmap in zip(["STAR", "TopHat"], [star, th]):
             data["{} ({})".format(label, aligner)] = [set(), set(), set()]
-            for row in csv.DictReader(star, delimiter="\t"):
+            for row in csv.DictReader(refmap, delimiter="\t"):
                 if row["best_ccode"] in ("=", "_"):
                     data["{} ({})".format(label, aligner)][0].add(row["ref_gene"])
                 elif row["best_ccode"][0]=="f":
