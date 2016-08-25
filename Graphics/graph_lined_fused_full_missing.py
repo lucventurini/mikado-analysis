@@ -40,7 +40,7 @@ def main():
                         data["{} ({})".format(label, aligner)][0].add(row["ref_gene"])
                     elif row["best_ccode"][0]=="f":
                         data["{} ({})".format(label, aligner)][2].add(row["ref_gene"])
-                    elif row["best_ccode"][0] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
+                    elif row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
                         data["{} ({})".format(label, aligner)][1].add(row["ref_gene"])
                 for num in range(3):
                     data["{} ({})".format(label, aligner)][num] = len(
