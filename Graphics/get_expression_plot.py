@@ -51,7 +51,8 @@ def generate_plot(dataframe, jpeg):
     print("Created the output TIFF")
     
     colors = rpy2.robjects.vectors.StrVector(["white", "darkgrey", "black",
-                                              "lightblue", "orange", "green", "red"])
+                                              # '"lightblue", "orange",
+                                              "green", "red"])
 
     rowSide = rpy2.robjects.vectors.StrVector(["gray"]*greater_100 + ["violet"]*hundred_to_ten +
                                               ["sky blue"]*ten_to_one +
@@ -61,39 +62,47 @@ def generate_plot(dataframe, jpeg):
     print("Creating the HeatMap")
     graphics.plot_new()
     gplots = importr("gplots")
-    gplots.heatmap_2(data_matrix, RowSideColors=rowSide)
-    # gplots.heatmap_2(data_matrix, RowSideColors=rowSide,
-    #                  density_info="none",
-    #                  trace="none",
-    #                  margins=rpy2.robjects.vectors.IntVector([18,15]),
-    #                  col=colors,
-    #                  breaks=numpy.arange(0.5, 6.5),
-    #                  cexCol=2, cexMain=10,
-    #                  # par=r.par(cex_main=10),
-    #                  cex_axis=1, cex_main=5, cex_lab=3, cex_sub=3,
-    #                  col_axis="red", col_lab="red",
-    #                  dendogram="none", key=False,
-    #                  Rowv="NA", Colv="NA")
-    print("Creating the legend")
+    # print(base.dim(data_matrix))
+    # base.heatmap(data_matrix)
+    # gplots.heatmap_2(data_matrix, RowSideColors=rowSide)
+    # data_matrix = data_matrix[:1000]
+    gplots.heatmap_2(data_matrix,
+                     RowSideColors=rowSide,
+                     col=colors,
+                     dendogram="none",
+                     breaks=numpy.arange(0.5, 8.5),
+                     density_info="none",
+                     trace="none",
+                     margins=rpy2.robjects.vectors.IntVector([18,15]),
+                     cexCol=2, cexMain=10,
+                     # par=r.par(cex_main=10),
+                     cex_axis=1, cex_main=5, cex_lab=3, cex_sub=3,
+                     col_axis="red", col_lab="red",
+                     key=False,
+                     Rowv="NA",
+                     Colv="NA")
 
+    #                  density_info="none",
+
+    print("Creating the legend")
     r.legend("top", fill=colors,
              legend=rpy2.robjects.vectors.StrVector(["1.No Overlap",
                                                      "2. Fragment or intronic",
                                                      "3. Fusion",
                                                      "4. Alternative splicing",
-                                                     "5. Extension (n, J)",
-                                                     "6. Contained (c, C, m)",
-                                                     "7. Match (=,_)"]),
+                                                     "5. Match (=,_)"]),
              cex=1.8,
              title="Class code legend")
 
+
     r.legend("left",
-             legend = rpy2.robjects.vectors.StrVector([">100 TPM", "10-100 TPM",
-                                                       "1-10 TPM", "0.01-1 TPM", "upto 0.01 TPM"]),
-             col = rpy2.robjects.vectors.StrVector(["gray", "violet",
-                                                    "sky blue", "light green", "yellow"]),
+             legend=rpy2.robjects.vectors.StrVector([">100 TPM", "10-100 TPM",
+                                                     "1-10 TPM", "0.01-1 TPM", "upto 0.01 TPM"]),
+             col=rpy2.robjects.vectors.StrVector(["gray", "violet",
+                                                  "sky blue", "light green", "yellow"]),
              cex=1.8,
              lty=1, lwd=10, title="TPM")
+
     print("Finished")
 
     grdevices.dev_off()
@@ -129,13 +138,13 @@ def analyse_refmap(input_file, label, values):
             elif ccode in ("G", "O", "g", "mo", "o", "h", "j"):
                 ccode = 4
             elif ccode in ("n", "J"):
-                ccode = 5
+                ccode = 4
             elif ccode in ("c", "C"):
-                ccode = 6
+                ccode = 2
             else:
                 assert (ccode in ("=", "_", "m") or (
                     ccode.split(",")[0] == "f" and ccode.split(",")[1] in ("=", "_"))), ccode
-                ccode = 7
+                ccode = 5
 
             if row["ref_id"] not in values:
                 ids_not_found.add(row["ref_id"])
@@ -157,14 +166,14 @@ def main():
     parser.add_argument("--quant_file", "-q",
                         required=True,
                         type=argparse.FileType("r"))
-    parser.add_argument("-l", "--labels", default=None, type=str,
+    parser.add_argument("-l", "--labels", default=None, type=str, nargs="+",
                         help="Labels for the input files, comma separated. Required.", required=True)
     parser.add_argument("--out", nargs="?", type=str, default="expression.tiff",
                         help="Optional output file name. Default: %(default)s")
     parser.add_argument("input_files", help="The RefMap input files", nargs="+")
     args = parser.parse_args()
 
-    args.labels = args.labels.split(",")
+    # args.labels = args.labels.split(",")
     if len(args.labels) != len(args.input_files):
         raise ValueError("Labels must be the same number as input files!")        
 
