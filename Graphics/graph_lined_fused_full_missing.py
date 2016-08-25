@@ -34,16 +34,17 @@ def main():
     for label, star, th in zip(args.labels, args.tophat, args.star):
         for aligner, refmap in zip(["STAR", "TopHat"], [star, th]):
             data["{} ({})".format(label, aligner)] = [set(), set(), set()]
-            for row in csv.DictReader(refmap, delimiter="\t"):
-                if row["best_ccode"] in ("=", "_"):
-                    data["{} ({})".format(label, aligner)][0].add(row["ref_gene"])
-                elif row["best_ccode"][0]=="f":
-                    data["{} ({})".format(label, aligner)][2].add(row["ref_gene"])
-                elif row["best_ccode"][0] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
-                    data["{} ({})".format(label, aligner)][1].add(row["ref_gene"])
-            for num in range(3):
-                data["{} ({})".format(label, aligner)][num] = len(
-                    data["{} ({})".format(label, aligner)][num])
+            with open(refmap) as refmap:
+                for row in csv.DictReader(refmap, delimiter="\t"):
+                    if row["best_ccode"] in ("=", "_"):
+                        data["{} ({})".format(label, aligner)][0].add(row["ref_gene"])
+                    elif row["best_ccode"][0]=="f":
+                        data["{} ({})".format(label, aligner)][2].add(row["ref_gene"])
+                    elif row["best_ccode"][0] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
+                        data["{} ({})".format(label, aligner)][1].add(row["ref_gene"])
+                for num in range(3):
+                    data["{} ({})".format(label, aligner)][num] = len(
+                        data["{} ({})".format(label, aligner)][num])
 
     # for row in text.split("\n"):
     #     if row.startswith("\t"):
