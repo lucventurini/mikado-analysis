@@ -9,7 +9,7 @@ import argparse
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--labels", nargs=10, required=True)
+    parser.add_argument("-l", "--labels", nargs=5, required=True)
     parser.add_argument("-o", "--out", default=None)
     parser.add_argument("--star", nargs=5)
     parser.add_argument("--tophat", nargs=5)
