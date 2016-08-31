@@ -4,6 +4,7 @@ import sys
 import argparse
 import csv
 import functools
+import re
 import pandas
 from collections import defaultdict
 import matplotlib.cm as cm
@@ -11,6 +12,7 @@ import matplotlib.colors
 # from rpy2.robjects import pandas2ri
 import numpy
 from matplotlib import pyplot as plt
+import matplotlib.patches
 # from matplotlib import ticker
 # pandas2ri.activate()
 
@@ -53,13 +55,31 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
 
     figure, axes=plt.subplots(nrows=nrows,
                               ncols=ncols,
-                              figsize=(8, 6))
+                              figsize=(16, 10))
 
     methods = dataframe.columns[2:]
     current = 0
 
     newticks = ["<= 0.01", "0.01 - 1", "1-5", "5-10", "> 10"]
 
+    figure.suptitle(" ".join(["${}$".format(re.sub("%", "\%", _)) for _ in args.title.split()]),
+                    fontsize=20, style="italic", family="serif")
+
+    Xaxis = matplotlib.patches.FancyArrow(0.05, 0.1, 0.89, 0,
+                                          width=0.0005,
+                                          length_includes_head=True,
+                                          transform=figure.transFigure, figure=figure,
+                                          color="k")
+
+    Yaxis = matplotlib.patches.FancyArrow(0.05, 0.1, 0, 0.8,
+                                          width=0.0005,
+                                          length_includes_head=True,
+                                          transform=figure.transFigure, figure=figure,
+                                          color="k")
+    figure.lines.extend([Xaxis, Yaxis])
+
+    figure.text(0.92, 0.12, "$Expression$ $(TPM)$", ha="center", fontsize=15)
+    figure.text(0.02, 0.6, "$Transcripts$ $per$ $category$ $(\%)$", va="center", fontsize=15, rotation="vertical")
 
     legend_handles = []
     for row in range(nrows):
@@ -87,7 +107,6 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
             # print(method, values_array.shape, values_array)
 
             X = numpy.arange(values_array.shape[1])
-            print(X)
             for i in range(values_array.shape[0]):
                 bar = plot.bar(X, values_array[i],
                          bottom = numpy.sum(values_array[:i], axis=0),
@@ -98,19 +117,19 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
                     legend_handles.append(bar)
 
             plot.set_ylim(0, 100)
-            plot.set_title("${}$".format(method))
+            plot.set_title(" ".join(["${}$".format(_) for _ in method.split()]))
             for tick in axes[row,col].get_xticklabels():
-                tick.set_rotation(270)
+                tick.set_rotation(60)
 
     plt.figlegend(labels=["Missed", "Intronic or Fragment", "Fusion", "Different structure",
                           "Extension", "Contained", "Match"], framealpha=0.3,
-                  loc="best", handles=legend_handles)
+                  loc="lower center", handles=legend_handles, ncol=4)
 
-    plt.tight_layout(pad=0.1,
+    plt.tight_layout(pad=0.15,
                      h_pad=.2,
-                     w_pad=0.2,
+                     w_pad=0.1,
                      rect=[0.1,  # Left
-                           0.2,  # Bottom
+                           0.1,  # Bottom
                            0.85,  # Right
                            0.9])  # Top
 
@@ -256,6 +275,8 @@ def main():
     parser.add_argument("--quant_file", "-q",
                         required=True,
                         type=argparse.FileType("r"))
+    parser.add_argument("--opaque", action="store_false", default=True,
+                        help="Flag. If set, the background of the figure will be white and opaque.")
     parser.add_argument("-l", "--labels", default=None, type=str, nargs="+",
                         help="Labels for the input files, comma separated. Required.", required=True)
     parser.add_argument("-cm", "--colourmap", default="Accent",
@@ -266,6 +287,7 @@ def main():
                                                             "png"])
     parser.add_argument("--out", nargs="?", type=str, default=None,
                         help="Optional output file name. Default: None (show to stdout)")
+    parser.add_argument("--title", type=str, default="")
     parser.add_argument("input_files", help="The RefMap input files", nargs="+")
     args = parser.parse_args()
 
