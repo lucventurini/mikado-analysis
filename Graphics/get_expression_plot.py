@@ -19,7 +19,7 @@ def sort_values(key, dictionary):
     return dictionary[key]["TPM"]
 
 
-def generate_plot(dataframe, args, nrows=2, ncols=4):
+def generate_plot(dataframe, args, nrows=2, ncols=5):
 
     # r = rpy2.robjects.r  # Start the R thread
     # base = importr("base")
@@ -60,6 +60,8 @@ def generate_plot(dataframe, args, nrows=2, ncols=4):
 
     newticks = ["<= 0.01", "0.01 - 1", "1-5", "5-10", "> 10"]
 
+
+    legend_handles = []
     for row in range(nrows):
         for col in range(ncols):
             if current == len(methods):
@@ -79,6 +81,7 @@ def generate_plot(dataframe, args, nrows=2, ncols=4):
                     (lowest, zer_to_one, ten_to_one, hundred_to_ten, greater_100)):
                 curr_array = [round(len(fraction[fraction[method] == num]) *100 / len(fraction), 2) for num in colors]
                 values_array.append(curr_array)
+
             values_array = numpy.array(values_array)
             values_array = values_array.transpose()
             # print(method, values_array.shape, values_array)
@@ -86,13 +89,22 @@ def generate_plot(dataframe, args, nrows=2, ncols=4):
             X = numpy.arange(values_array.shape[1])
             print(X)
             for i in range(values_array.shape[0]):
-                plot.bar(X, values_array[i],
+                bar = plot.bar(X, values_array[i],
                          bottom = numpy.sum(values_array[:i], axis=0),
                          color=colors[i+1])
+                if row == col == 0:
+                    # add handles to the legend
+                    bar.get_children()[0].get_sketch_params()
+                    legend_handles.append(bar)
+
             plot.set_ylim(0, 100)
             plot.set_title("${}$".format(method))
             for tick in axes[row,col].get_xticklabels():
                 tick.set_rotation(270)
+
+    plt.figlegend(labels=["Missed", "Intronic or Fragment", "Fusion", "Different structure",
+                          "Extension", "Contained", "Match"], framealpha=0.3,
+                  loc="best", handles=legend_handles)
 
     plt.tight_layout(pad=0.1,
                      h_pad=.2,
