@@ -42,13 +42,14 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
     zer_to_one = dataframe[(dataframe.TPM > 0.01) & (dataframe.TPM <= 1)]
     lowest = dataframe[(dataframe.TPM <= 0.01)]
     print("Got the intervals", file=sys.stderr)
+    plt.style.context("ggplot")
 
     color_map = cm.get_cmap(args.colourmap)
     color_normalizer = matplotlib.colors.Normalize(2, 8)
 
     colors = {1: "white"}
 
-    for num in range(2, 8):
+    for num in range(2, 7*2 + 1):
         colors[num] = color_map(color_normalizer(num))
 
     # plot = plt.plot()
@@ -99,7 +100,7 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
             for name, fraction in zip(
                     ("lowest", "zer_to_one", "ten_to_one", "hundred_to_ten", "greater_100"),
                     (lowest, zer_to_one, ten_to_one, hundred_to_ten, greater_100)):
-                curr_array = [round(len(fraction[fraction[method] == num]) *100 / len(fraction), 2) for num in colors]
+                curr_array = [round(len(fraction[fraction[method] == num]) *100 / len(fraction), 2) for num in range(1, 7)]
                 values_array.append(curr_array)
 
             values_array = numpy.array(values_array)
@@ -107,10 +108,11 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
             # print(method, values_array.shape, values_array)
 
             X = numpy.arange(values_array.shape[1])
+            print(list(range(values_array.shape[0])))
             for i in range(values_array.shape[0]):
                 bar = plot.bar(X, values_array[i],
                          bottom = numpy.sum(values_array[:i], axis=0),
-                         color=colors[i+1])
+                         color=colors[(i+1)*2])
                 if row == col == 0:
                     # add handles to the legend
                     bar.get_children()[0].get_sketch_params()
@@ -122,7 +124,7 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
                 tick.set_rotation(60)
 
     plt.figlegend(labels=["Missed", "Intronic or Fragment", "Fusion", "Different structure",
-                          "Extension", "Contained", "Match"], framealpha=0.3,
+                          "Contained", "Match"], framealpha=0.3,
                   loc="lower center", handles=legend_handles, ncol=4)
 
     plt.tight_layout(pad=0.15,
@@ -247,13 +249,13 @@ def analyse_refmap(input_file, label, values):
             elif ccode in ("G", "O", "g", "mo", "o", "h", "j"):
                 ccode = 4
             elif ccode in ("n", "J"):
-                ccode = 5
+                ccode = 4
             elif ccode in ("c", "C"):
-                ccode = 6
+                ccode = 5
             else:
                 assert (ccode in ("=", "_", "m") or (
                     ccode.split(",")[0] == "f" and ccode.split(",")[1] in ("=", "_"))), ccode
-                ccode = 7
+                ccode = 6
 
             if row["ref_id"] not in values:
                 ids_not_found.add(row["ref_id"])
@@ -306,6 +308,16 @@ def main():
 
     for input_file, label in zip(args.input_files, args.labels):
         values = analyse_refmap(input_file, label, values)
+
+    tids = set(values.keys())
+    right_total = len(args.labels) + 2
+    for tid in tids:
+        if len(values[tid].keys()) == 2:
+            del values[tid]
+        elif len(values[tid].keys()) != right_total:
+            raise KeyError("ID {} has been found only in {}".format(tid, values[tid].keys()))
+    if tids != set(values.keys()):
+        print("Removed {} TIDs due to filtering".format(len(tids) - len(set(values.keys()))))
 
     data = defaultdict(list)
 
