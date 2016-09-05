@@ -1,0 +1,8 @@
+numpy
+ggplot
+matplotlib
+mikado
+deap
+pandas
+seaborn
+rpy2
