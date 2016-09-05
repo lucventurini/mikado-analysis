@@ -9,12 +9,11 @@ import pandas
 from collections import defaultdict
 import matplotlib.cm as cm
 import matplotlib.colors
-# from rpy2.robjects import pandas2ri
 import numpy
 from matplotlib import pyplot as plt
 import matplotlib.patches
-# from matplotlib import ticker
-# pandas2ri.activate()
+from math import floor
+import seaborn
 
 
 def sort_values(key, dictionary):
@@ -45,12 +44,14 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
     plt.style.context("ggplot")
 
     color_map = cm.get_cmap(args.colourmap)
-    color_normalizer = matplotlib.colors.Normalize(2, 8)
+    color_normalizer = matplotlib.colors.Normalize(2, 15)
 
-    colors = {1: "white"}
+    colors = {1: "white", 2: "white"}
 
-    for num in range(2, 7*2 + 1):
+    for num in range(3, 7*2 + 1):
         colors[num] = color_map(color_normalizer(num))
+
+    print(*colors.items(), sep="\n")
 
     # plot = plt.plot()
 
@@ -61,7 +62,7 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
     methods = dataframe.columns[2:]
     current = 0
 
-    newticks = ["<= 0.01", "0.01 - 1", "1-5", "5-10", "> 10"]
+    newticks = ["0 - 0.01", "0.01 - 1", "1-5", "5-10", "> 10"]
 
     figure.suptitle(" ".join(["${}$".format(re.sub("%", "\%", _)) for _ in args.title.split()]),
                     fontsize=20, style="italic", family="serif")
@@ -123,9 +124,11 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
             for tick in axes[row,col].get_xticklabels():
                 tick.set_rotation(60)
 
-    plt.figlegend(labels=["Missed", "Intronic or Fragment", "Fusion", "Different structure",
-                          "Contained", "Match"], framealpha=0.3,
-                  loc="lower center", handles=legend_handles, ncol=4)
+    labels = ["Missed", "Intronic or Fragment", "Fusion", "Different structure",
+                          "Contained", "Match"]
+    plt.figlegend(labels=labels, framealpha=0.3,
+                  loc="lower center", handles=legend_handles,
+                  ncol=floor(len(labels) / 2) + len(labels) % 2)
 
     plt.tight_layout(pad=0.15,
                      h_pad=.2,
@@ -149,6 +152,7 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
     #     # print(curr_height)
 
     if args.out is None:
+        print("Showing the plot")
         plt.show()
     else:
         plt.savefig(args.out, format=args.format, dpi=args.dpi, transparent=args.opaque)
@@ -281,7 +285,7 @@ def main():
                         help="Flag. If set, the background of the figure will be white and opaque.")
     parser.add_argument("-l", "--labels", default=None, type=str, nargs="+",
                         help="Labels for the input files, comma separated. Required.", required=True)
-    parser.add_argument("-cm", "--colourmap", default="Accent",
+    parser.add_argument("-cm", "--colourmap", default="RdYlBu_r",
                         help="Colourmap to be used.")
     parser.add_argument("--dpi", default=600, type=int)
     parser.add_argument("--format", default="svg", choices=["svg",
@@ -313,6 +317,8 @@ def main():
     right_total = len(args.labels) + 2
     for tid in tids:
         if len(values[tid].keys()) == 2:
+            del values[tid]
+        elif values[tid]["TPM"] == 0:
             del values[tid]
         elif len(values[tid].keys()) != right_total:
             raise KeyError("ID {} has been found only in {}".format(tid, values[tid].keys()))

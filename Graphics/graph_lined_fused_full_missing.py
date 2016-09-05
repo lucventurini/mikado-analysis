@@ -21,6 +21,7 @@ def main():
     parser.add_argument("-o", "--out", default=None)
     parser.add_argument("--star", nargs=5)
     parser.add_argument("--tophat", nargs=5)
+    parser.add_argument("--log", action="store_true", default=False)
     # parser.add_argument("refmap", nargs=10, type=argparse.FileType("rt"))
     args = parser.parse_args()
 
@@ -59,20 +60,15 @@ def main():
 
     print(*data.items(), sep="\n")
 
-    # for row in text.split("\n"):
-    #     if row.startswith("\t"):
-    #         continue
-    #     aligner, *points = row.split("\t")
-    #     if len(points) == 0:
-    #         continue
-    #     data[aligner] = [int(_) for _ in points]
-    #     continue
-
     figure, axes = plt.subplots(nrows=1,
                                 ncols=1,
                                 dpi=300, figsize=(8, 6))
     # print(axes)
     plot = axes
+
+    # Set the axis to log if necessary
+    if args.log is True:
+        plt.xscale("log")
 
     plot.plot((1, max(max(data[_]) + 1000 for _ in data)), (1, 1), 'k-')
     plot.plot((1, max(max(data[_]) + 1000 for _ in data)), (2, 2), 'k-')
@@ -93,6 +89,7 @@ def main():
             handle.get_sketch_params()
             if pos == 0:
                 handles.append(handle)
+
     # handles, labels = plot.get_legend_handles_labels()
     plt.figlegend(labels=data.keys(), framealpha=0.3,
                   loc=(0.31, 0.09), handles=handles,
