@@ -1,0 +1,70 @@
+Athaliana	STAR	Class	/usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/STAR/Original/Class	/usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/STAR/Filtered/Class
+Athaliana       STAR    Cufflinks   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/STAR/Original/Cufflinks    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/STAR/Filtered/Cufflinks
+Athaliana       STAR    Stringtie   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/STAR/Original/Stringtie    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/STAR/Filtered/Stringtie
+Athaliana       STAR    Trinity   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/STAR/Original/Trinity    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/STAR/Filtered/Trinity
+Athaliana       STAR    Mikado   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/STAR/Original/Mikado/permissive    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/STAR/Filtered/Mikado/permissive
+Athaliana	TopHat	Class	/usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/TopHat/Original/Class	/usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/TopHat/Filtered/Class
+Athaliana       TopHat    Cufflinks   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/TopHat/Original/Cufflinks    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/TopHat/Filtered/Cufflinks
+Athaliana       TopHat    Stringtie   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/TopHat/Original/Stringtie    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/TopHat/Filtered/Stringtie
+Athaliana       TopHat    Trinity   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/TopHat/Original/Trinity    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/TopHat/Filtered/Trinity
+Athaliana       TopHat    Mikado   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/TopHat/Original/Mikado/permissive    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Athaliana/Comparisons/TopHat/Filtered/Mikado/permissive
+Dmelanogaster       STAR    Class   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Dmelanogaster/Comparisons/STAR/Original/Class    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From\
+_060716/Dmelanogaster/Comparisons/STAR/Filtered/Class
+Dmelanogaster       STAR    Cufflinks   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Dmelanogaster/Comparisons/STAR/Original/Cufflinks    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mik\
+ado/From_060716/Dmelanogaster/Comparisons/STAR/Filtered/Cufflinks
+Dmelanogaster       STAR    Stringtie   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Dmelanogaster/Comparisons/STAR/Original/Stringtie    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mik\
+ado/From_060716/Dmelanogaster/Comparisons/STAR/Filtered/Stringtie
+Dmelanogaster       STAR    Trinity   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Dmelanogaster/Comparisons/STAR/Original/Trinity    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/\
+From_060716/Dmelanogaster/Comparisons/STAR/Filtered/Trinity
+Dmelanogaster       STAR    Mikado   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Dmelanogaster/Comparisons/STAR/Original/Mikado/permissive    /usr/users/ga002/venturil/HPC_group-ga/Project\
+s/Mikado/From_060716/Dmelanogaster/Comparisons/STAR/Filtered/Mikado/permissive
+Dmelanogaster       TopHat  Class   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Dmelanogaster/Comparisons/TopHat/Original/Class  /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From\
+_060716/Dmelanogaster/Comparisons/TopHat/Filtered/Class
+Dmelanogaster       TopHat    Cufflinks   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Dmelanogaster/Comparisons/TopHat/Original/Cufflinks    /usr/users/ga002/venturil/HPC_group-ga/Projects\
+/Mikado/From_060716/Dmelanogaster/Comparisons/TopHat/Filtered/Cufflinks
+Dmelanogaster       TopHat    Stringtie   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Dmelanogaster/Comparisons/TopHat/Original/Stringtie    /usr/users/ga002/venturil/HPC_group-ga/Projects\
+/Mikado/From_060716/Dmelanogaster/Comparisons/TopHat/Filtered/Stringtie
+Dmelanogaster       TopHat    Trinity   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Dmelanogaster/Comparisons/TopHat/Original/Trinity    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mik\
+ado/From_060716/Dmelanogaster/Comparisons/TopHat/Filtered/Trinity
+Dmelanogaster       TopHat    Mikado   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Dmelanogaster/Comparisons/TopHat/Original/Mikado/permissive    /usr/users/ga002/venturil/HPC_group-ga/Pro\
+jects/Mikado/From_060716/Dmelanogaster/Comparisons/TopHat/Filtered/Mikado/permissive
+Celegans       STAR    Class   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Celegans/Comparisons/STAR/Original/Class    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From\
+_060716/Celegans/Comparisons/STAR/Filtered/Class
+Celegans       STAR    Cufflinks   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Celegans/Comparisons/STAR/Original/Cufflinks    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mik\
+ado/From_060716/Celegans/Comparisons/STAR/Filtered/Cufflinks
+Celegans       STAR    Stringtie   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Celegans/Comparisons/STAR/Original/Stringtie    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mik\
+ado/From_060716/Celegans/Comparisons/STAR/Filtered/Stringtie
+Celegans       STAR    Trinity   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Celegans/Comparisons/STAR/Original/Trinity    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/\
+From_060716/Celegans/Comparisons/STAR/Filtered/Trinity
+Celegans       STAR    Mikado   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Celegans/Comparisons/STAR/Original/Mikado/permissive    /usr/users/ga002/venturil/HPC_group-ga/Project\
+s/Mikado/From_060716/Celegans/Comparisons/STAR/Filtered/Mikado/permissive
+Celegans       TopHat  Class   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Celegans/Comparisons/TopHat/Original/Class  /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From\
+_060716/Celegans/Comparisons/TopHat/Filtered/Class
+Celegans       TopHat    Cufflinks   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Celegans/Comparisons/TopHat/Original/Cufflinks    /usr/users/ga002/venturil/HPC_group-ga/Projects\
+/Mikado/From_060716/Celegans/Comparisons/TopHat/Filtered/Cufflinks
+Celegans       TopHat    Stringtie   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Celegans/Comparisons/TopHat/Original/Stringtie    /usr/users/ga002/venturil/HPC_group-ga/Projects\
+/Mikado/From_060716/Celegans/Comparisons/TopHat/Filtered/Stringtie
+Celegans       TopHat    Trinity   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Celegans/Comparisons/TopHat/Original/Trinity    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mik\
+ado/From_060716/Celegans/Comparisons/TopHat/Filtered/Trinity
+Celegans       TopHat    Mikado   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Celegans/Comparisons/TopHat/Original/Mikado/permissive    /usr/users/ga002/venturil/HPC_group-ga/Pro\
+jects/Mikado/From_060716/Celegans/Comparisons/TopHat/Filtered/Mikado/permissive
+Hsapiens       STAR    Class   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Hsapiens/Comparisons/STAR/Original/Class    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From\
+_060716/Hsapiens/Comparisons/STAR/Filtered/Class
+Hsapiens       STAR    Cufflinks   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Hsapiens/Comparisons/STAR/Original/Cufflinks    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mik\
+ado/From_060716/Hsapiens/Comparisons/STAR/Filtered/Cufflinks
+Hsapiens       STAR    Stringtie   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Hsapiens/Comparisons/STAR/Original/Stringtie    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mik\
+ado/From_060716/Hsapiens/Comparisons/STAR/Filtered/Stringtie
+Hsapiens       STAR    Trinity   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Hsapiens/Comparisons/STAR/Original/Trinity    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/\
+From_060716/Hsapiens/Comparisons/STAR/Filtered/Trinity
+Hsapiens       STAR    Mikado   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Hsapiens/Comparisons/STAR/Original/Mikado/stringent    /usr/users/ga002/venturil/HPC_group-ga/Project\
+s/Mikado/From_060716/Hsapiens/Comparisons/STAR/Filtered/Mikado/stringent
+Hsapiens       TopHat  Class   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Hsapiens/Comparisons/TopHat/Original/Class  /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From\
+_060716/Hsapiens/Comparisons/TopHat/Filtered/Class
+Hsapiens       TopHat    Cufflinks   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Hsapiens/Comparisons/TopHat/Original/Cufflinks    /usr/users/ga002/venturil/HPC_group-ga/Projects\
+/Mikado/From_060716/Hsapiens/Comparisons/TopHat/Filtered/Cufflinks
+Hsapiens       TopHat    Stringtie   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Hsapiens/Comparisons/TopHat/Original/Stringtie    /usr/users/ga002/venturil/HPC_group-ga/Projects\
+/Mikado/From_060716/Hsapiens/Comparisons/TopHat/Filtered/Stringtie
+Hsapiens       TopHat    Trinity   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Hsapiens/Comparisons/TopHat/Original/Trinity    /usr/users/ga002/venturil/HPC_group-ga/Projects/Mik\
+ado/From_060716/Hsapiens/Comparisons/TopHat/Filtered/Trinity
+Hsapiens       TopHat    Mikado   /usr/users/ga002/venturil/HPC_group-ga/Projects/Mikado/From_060716/Hsapiens/Comparisons/TopHat/Original/Mikado/stringent    /usr/users/ga002/venturil/HPC_group-ga/Pro\
+jects/Mikado/From_060716/Hsapiens/Comparisons/TopHat/Filtered/Mikado/stringent
