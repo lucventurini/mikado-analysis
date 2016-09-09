@@ -1,0 +1,89 @@
+methods:
+  Class:
+    STAR:
+      - Comparisons/STAR/Original/CLASS.stats
+      - Comparisons/STAR/Filtered/CLASS.stats
+    TopHat:
+      - Comparisons/TopHat/Original/CLASS.stats
+      - Comparisons/TopHat/Filtered/CLASS.stats
+    colour: darkgreen
+    index: 1
+  Cufflinks:
+    STAR:
+      - Comparisons/STAR/Original/Cufflinks.stats
+      - Comparisons/STAR/Filtered/Cufflinks.stats
+    TopHat:
+      - Comparisons/TopHat/Original/Cufflinks.stats
+      - Comparisons/TopHat/Filtered/Cufflinks.stats
+    colour: purple
+    index: 2
+  Stringtie:
+    STAR:
+      - Comparisons/STAR/Original/Stringtie.stats
+      - Comparisons/STAR/Filtered/Stringtie.stats
+    TopHat:
+      - Comparisons/TopHat/Original/Stringtie.stats
+      - Comparisons/TopHat/Filtered/Stringtie.stats
+    colour: blue
+    index: 3
+  Trinity:
+    STAR:
+      - Comparisons/STAR/Original/Trinity.stats
+      - Comparisons/STAR/Filtered/Trinity.stats
+    TopHat:
+      - Comparisons/TopHat/Original/Trinity.stats
+      - Comparisons/TopHat/Filtered/Trinity.stats
+    colour: darkorange
+    index: 4
+  Mikado permissive:
+    STAR:
+      - Comparisons/STAR/Original/Mikado/permissive.stats
+      - Comparisons/STAR/Filtered/Mikado/permissive.stats
+    TopHat:
+      - Comparisons/TopHat/Original/Mikado/permissive.stats
+      - Comparisons/TopHat/Filtered/Mikado/permissive.stats
+    colour: red
+    index: 5
+  # Mikado stringent:
+  #   STAR:
+  #     - Comparisons/STAR/Original/Mikado/stringent.stats
+  #     - Comparisons/STAR/Filtered/Mikado/stringent.stats
+  #   TopHat:
+  #     - Comparisons/TopHat/Original/Mikado/stringent.stats
+  #     - Comparisons/TopHat/Filtered/Mikado/stringent.stats
+  #   colour: black
+  #   index: 6
+  # Mikado split:
+  #   STAR:
+  #     - Comparisons/STAR/Original/Mikado/split.stats
+  #     - Comparisons/STAR/Filtered/Mikado/split.stats
+  #   TopHat:
+  #     - Comparisons/TopHat/Original/Mikado/split.stats
+  #     - Comparisons/TopHat/Filtered/Mikado/split.stats
+  #   colour: gold
+  #   index: 7
+  # Mikado nosplit:
+  #   STAR:
+  #     - Comparisons/STAR/Original/Mikado/nosplit.stats
+  #     - Comparisons/STAR/Filtered/Mikado/nosplit.stats
+  #   TopHat:
+  #     - Comparisons/TopHat/Original/Mikado/nosplit.stats
+  #     - Comparisons/TopHat/Filtered/Mikado/nosplit.stats
+  #   colour: pink
+  #   index: 8
+  # Mikado lenient:
+  #   STAR:
+  #     - Comparisons/STAR/Original/Mikado/lenient.stats
+  #     - Comparisons/STAR/Filtered/Mikado/lenient.stats
+  #   TopHat:
+  #     - Comparisons/TopHat/Original/Mikado/lenient.stats
+  #     - Comparisons/TopHat/Filtered/Mikado/lenient.stats
+  #   colour: lightblue
+  #   index: 9
+out: Graphs/stats_plot
+format: svg
+dpi: 1000
+colourmap:
+  use: false
+  name: Accent
+opaque: false

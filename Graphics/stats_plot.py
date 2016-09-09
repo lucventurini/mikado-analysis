@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import os
 import matplotlib.lines
 import matplotlib.patches
 import matplotlib.pyplot as plt
@@ -12,6 +13,9 @@ from collections import OrderedDict
 import matplotlib.ticker as ticker
 from math import ceil, floor
 from itertools import zip_longest
+import yaml
+from collections import OrderedDict
+from operator import itemgetter
 
 __doc__ = """Script to automate the plots for the Mikado compare statistics"""
 
@@ -31,51 +35,50 @@ def main():
 
     parser = argparse.ArgumentParser(__doc__,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--tophat", nargs="+", required=True,
-                        help="For each invocation, specify the original and the filtered stats file from Compare.")
-    parser.add_argument("--star", nargs="+", required=True,
-                        help="For each invocation, specify the original and the filtered stats file from Compare.")
-    parser.add_argument("--labels", nargs="+", required=True,
-                        help="Labels to use. They must be in the same number and order of the star/tophat files.")
-    parser.add_argument("--out", default=None, required=True)
-    parser.add_argument("--opaque", action="store_false", default=True,
-                        help="Flag. If set, the background of the figure will be white and opaque.")
-    parser.add_argument("--format", default="svg", choices=["svg",
-                                                            "pdf",
-                                                            "png"])
-    parser.add_argument("-c", "--colours", "--colors", dest="colours",
-                        default=None, nargs="+",
-                        help="Colours to be used. Defaults to use a colourmap")
-    parser.add_argument("-cm", "--colourmap", default="gist_rainbow",
-                        help="Colourmap to be used.")
-    parser.add_argument("--dpi", default=600, type=int)
+    parser.add_argument("-c", "--configuration", required=True, type=argparse.FileType("r"))
     parser.add_argument("--title", default="Mikado stats")
     args = parser.parse_args()
 
-    if (len(args.tophat) != len(args.star) or len(args.labels) != int(len(args.star) / 2) or
-            len(args.star) % 2 != 0):
-        print(
-            "Error, labels and stats files are not the same number \
-            (TH: {}, STAR: {}, Labels: {})\n\
-             TH: {}\n\
-             STAR: {}\n\
-            Labels: {}".format(
-                len(args.tophat), len(args.star), len(args.labels),
-            args.tophat, args.star, args.labels))
-        parser.print_help()
-        sys.exit(1)
+    options = yaml.load(args.configuration)
+    args.configuration.close()
 
-    if args.colours is not None:
-        if len(args.colours) != len(args.labels) or len(set(args.colours)) != len(args.colours):
-            print("Error, invalid number of unique colors specified")
-            parser.print_help()
-            sys.exit(1)
+    for method in options["methods"]:
+        for key in ("STAR", "colour", "index", "TopHat"):
+            if key not in options["methods"][method]:
+                raise KeyError("{} not found for {}".format(key.capitalize(),
+                                                            method))
+        for key in ("STAR", "TopHat"):
+            if not isinstance(options["methods"][method][key], list):
+                raise TypeError("Invalid type for aligner {}: {}".format(
+                    key, type(options["methods"][method][key])))
+            elif len(options["methods"][method][key]) != 2:
+                raise ValueError("Invalid number of files specified for {} / {}".format(
+                    method, key))
+            elif any(not os.path.exists(_) for _ in options["methods"][method][key]):
+                raise OSError("Files not found: {}".format(", ".join(
+                    options["methods"][method][key])))
+
+    new_methods = OrderedDict()
+
+    for index, method in sorted([(options["methods"][method]["index"], method)
+                          for method in options["methods"]], key=itemgetter(0)):
+        new_methods[method] = options["methods"][method]
+
+    options["methods"] = new_methods
+
+    if len(set(options["methods"][method]["colour"]
+               for method in options["methods"])) != len(options["methods"]):
+        raise ValueError("Invalid unique number of colours specified!")
+
+    if options["format"] not in ("svg", "png", "tiff"):
+        raise ValueError("Invalid output format specified: {}".format(
+            options["format"]))
 
     stats = OrderedDict()
     figure, axes = plt.subplots(nrows=2,
-                                ncols=3,
-                                dpi=args.dpi, figsize=(8, 6))
-    figure.suptitle("${}$".format(args.title),
+                                ncols=4,
+                                dpi=options["dpi"], figsize=(12, 6))
+    figure.suptitle(" ".join(["${}$".format(_) for _ in args.title.split()]),
                     fontsize=20, style="italic", family="serif")
 
     Xaxis = matplotlib.patches.FancyArrow(0.1, 0.19, 0.89, 0,
@@ -93,15 +96,17 @@ def main():
     figure.text(0.92, 0.21, "$Precision$", ha="center", fontsize=15)
     figure.text(0.07, 0.8, "$Recall$", va="center", fontsize=15, rotation="vertical")
 
-    name_ar = np.array([["Base", "Exon", "Intron"],
-                        ["Intron chain", "Transcript", "Gene"]])
+    name_ar = np.array([["Base", "Exon", "Intron", "Intron chain"],
+                        ["Transcript (95% nF1)", "Transcript (80% nF1)",
+                         "Gene (95% nF1)", "Gene (80% nF1)"]])
 
-    color_normalizer = matplotlib.colors.Normalize(0, len(args.labels))
-    color_map = cm.get_cmap(args.colourmap)
+    if options["colourmap"]["use"] is True:
+        color_normalizer = matplotlib.colors.Normalize(0, len(options["methods"]))
+        color_map = cm.get_cmap(options["colourmap"]["name"])
     # mapper = cm.ScalarMappable(colors, "PuOr")
 
     for xrow in (0, 1):
-        for yrow in (0, 1, 2):
+        for yrow in (0, 1, 2, 3):
             key = name_ar[xrow, yrow]
             plot = axes[xrow, yrow]
             plot.grid(True)
@@ -114,47 +119,17 @@ def main():
             stats[key][b"STAR"] = []
             stats[key][b"TopHat"] = []
 
-    print(*args.star, sep="\n")
-    
-    # We presume we have FIRST all original, THEN all filtered.
-    args.star = list(zip(args.star[:len(args.labels)], args.star[len(args.labels):]))
-    args.tophat = list(zip(args.tophat[:len(args.labels)], args.tophat[len(args.labels):]))
-
-    for label, name in zip(args.labels, args.star):
-        print(label, name)
-        orig, filtered = name
-        # orig = "{}-compare.stats".format(name)
-        # filtered = "{}-filtered_compare.stats".format(name)
-
-        orig_lines = [line.rstrip() for line in open(orig)]
-        filtered_lines = [line.rstrip() for line in open(filtered)]
-        # In the stats we have precision as second and sensitivity as first,
-        # we have to invert
-        for index, line_index in enumerate([5, 7, 8, 9, 12, 15]):
-            precision = float(orig_lines[line_index].split(":")[1].split()[1])
-            recall = float(filtered_lines[line_index].split(":")[1].split()[0])
-            stats[
-                # Name of the statistic:Base, Exon, etc
-                list(stats.keys())[index]][
-                b"STAR"].append((precision, recall))
-
-    for label, name in zip(args.labels, args.tophat):
-        print(label, name)
-        orig, filtered = name
-        # orig = "{}-compare.stats".format(name)
-        # filtered = "{}-filtered_compare.stats".format(name)
-
-        orig_lines = [line.rstrip() for line in open(orig)]
-        filtered_lines = [line.rstrip() for line in open(filtered)]
-        # In the stats we have precision as second and sensitivity as first,
-        # we have to invert
-        for index, line_index in enumerate([5, 7, 8, 9, 12, 15]):
-            precision = float(orig_lines[line_index].split(":")[1].split()[1])
-            recall = float(filtered_lines[line_index].split(":")[1].split()[0])
-            stats[
-                # Name of the statistic:Base, Exon, etc
-                list(stats.keys())[index]][
-                b"TopHat"].append((precision, recall))
+    for method in options["methods"]:
+        for aligner in ("STAR", "TopHat"):
+            orig, filtered = options["methods"][method][aligner]
+            orig_lines = [line.rstrip() for line in open(orig)]
+            filtered_lines = [line.rstrip() for line in open(filtered)]
+            for index, line_index in enumerate([5, 7, 8, 9, 11, 12, 14, 15]):
+                precision = float(orig_lines[line_index].split(":")[1].split()[1])
+                recall = float(filtered_lines[line_index].split(":")[1].split()[0])
+                stats[
+                    # Name of the statistic:Base, Exon, etc
+                    list(stats.keys())[index]][aligner.encode()].append((precision, recall))
 
     handles, labels = None, None
 
@@ -178,6 +153,9 @@ def main():
         x_maximum = min(100, 10 * (ceil(max(Xtop.max(), Xstar.max()) / 10.0) + 0.5))
         y_maximum = min(100, 10 * (ceil(max(Ytop.max(), Ystar.max()) / 10.0) + 0.5))
 
+        x_maximum, y_maximum = [max(x_maximum, y_maximum)] * 2
+        x_minimum, y_minimum = [min(x_minimum, y_minimum)] * 2
+
         # minimum = max(0, 10 * (floor(
         #         min(Xtop.min(), Xstar.min(), Ystar.min(), Ytop.min()
         #         ) / 10.0) - 0.5))
@@ -197,22 +175,23 @@ def main():
 
         plot.plot(0, 1, ls="--", c=".3")
 
-        for index, vals in enumerate(zip(Xtop, Ytop, args.labels)):
+        for index, vals in enumerate(zip(Xtop, Ytop, options["methods"].keys())):
             x, y, label = vals
-            if args.colours is not None:
-                colour = args.colours[index]
+            if options["colourmap"]["use"] is False:
+                colour = options["methods"][label]["colour"]
             else:
-                colour = color_map(color_normalizer(index))
+                colour = color_map(color_normalizer(options["methods"][label]["index"]))
+
             plot.scatter(x, y, label="{0} (TopHat)".format(label), c=colour,
                          marker="^", edgecolor="k",
                          s=[50.0], alpha=.8)
 
-        for index, vals in enumerate(zip(Xstar, Ystar, args.labels)):
+        for index, vals in enumerate(zip(Xstar, Ystar, options["methods"].keys())):
             x, y, label = vals
-            if args.colours is not None:
-                colour = args.colours[index]
+            if options["colourmap"]["use"] is False:
+                colour = options["methods"][label]["colour"]
             else:
-                colour = color_map(color_normalizer(index))
+                colour = color_map(color_normalizer(options["methods"][label]["index"]))
             plot.scatter(x, y, label="{0} (STAR)".format(label), c=colour,
                          marker="o",
                          s=[50.0], alpha=.8)
@@ -223,7 +202,7 @@ def main():
     plt.figlegend(labels=labels,
                   loc="lower center", handles=handles,
                   scatterpoints=1,
-                  ncol=3, fontsize=10,
+                  ncol=ceil(len(options["methods"])*2/4), fontsize=10,
                   framealpha=0.5)
     # Necessary to pad the superior title
     plt.tight_layout(pad=0.5,
@@ -233,10 +212,14 @@ def main():
                            0.2,  # Bottom
                            0.85,  # Right
                            0.9])  # Top
-    if args.out is None:
-        plt.show()
+    if options["out"] is None:
+        plt.ion()
+        plt.show(block=True)
     else:
-        plt.savefig(args.out, format=args.format, dpi=args.dpi, transparent=args.opaque)
+        plt.savefig("{}.{}".format(options["out"], options["format"]),
+                    format=options["format"],
+                    dpi=options["dpi"],
+                    transparent=options["opaque"])
 
 if __name__ == "__main__":
     main()
