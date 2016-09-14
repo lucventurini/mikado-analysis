@@ -10,40 +10,31 @@ from collections import defaultdict
 import matplotlib.cm as cm
 import matplotlib.colors
 import numpy
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 import matplotlib.patches
 from math import floor
 import seaborn
+from utils import parse_configuration
 
 
 def sort_values(key, dictionary):
     return dictionary[key]["TPM"]
 
 
-def generate_plot(dataframe, args, nrows=2, ncols=5):
-
-    # r = rpy2.robjects.r  # Start the R thread
-    # base = importr("base")
-    #
-    # graphics = importr('graphics')
-    #
-    # # from rpy2.robjects.packages import importr
-    # # from rpy2.robjects import pandas2ri
-    # color_brewer = importr("RColorBrewer")
-    # ggplot2 = importr("ggplot2")
-    # grdevices = importr("grDevices")
+def generate_plot(dataframe, args, options, nrows=2, ncols=5):
 
     dataframe = dataframe.sort_values("TPM", ascending=True)
     print("Sorted dataframe", file=sys.stderr)
-    greater_100 = dataframe[(dataframe.TPM > 10)]
-    hundred_to_ten = dataframe[(dataframe.TPM <= 10) & (dataframe.TPM > 5)]
-    ten_to_one = dataframe[(dataframe.TPM > 1) & (dataframe.TPM <= 5)]
+    greater_100 = dataframe[(dataframe.TPM > 100)]
+    hundred_to_ten = dataframe[(dataframe.TPM <= 100) & (dataframe.TPM > 10)]
+    ten_to_five = dataframe[(dataframe.TPM > 5) & (dataframe.TPM <= 10)]
+    five_to_one = dataframe[(dataframe.TPM > 1) & (dataframe.TPM <= 5)]
     zer_to_one = dataframe[(dataframe.TPM > 0.01) & (dataframe.TPM <= 1)]
     lowest = dataframe[(dataframe.TPM <= 0.01)]
     print("Got the intervals", file=sys.stderr)
     plt.style.context("ggplot")
 
-    color_map = cm.get_cmap(args.colourmap)
+    color_map = cm.get_cmap(options["colourmap"]["name"])
     color_normalizer = matplotlib.colors.Normalize(2, 15)
 
     colors = {1: "white", 2: "white"}
@@ -62,7 +53,7 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
     methods = dataframe.columns[2:]
     current = 0
 
-    newticks = ["0 - 0.01", "0.01 - 1", "1-5", "5-10", "> 10"]
+    newticks = ["0 - 0.01", "0.01 - 1", "1-5", "5-10", "10-100", "$\geq$ 100"]
 
     figure.suptitle(" ".join(["${}$".format(re.sub("%", "\%", _)) for _ in args.title.split()]),
                     fontsize=20, style="italic", family="serif")
@@ -95,12 +86,12 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
             plot = axes[row, col]
             _axes = plot.axes
             # _axes.xaxis.set_major_locator(ticker.MultipleLocator(1))
-            _axes.set_xticks(numpy.arange(0.5,5.5,1))
+            _axes.set_xticks(numpy.arange(0.5, 6.5,1))
             plot.set_xticklabels(newticks, fontsize=10)
             values_array = []
             for name, fraction in zip(
-                    ("lowest", "zer_to_one", "ten_to_one", "hundred_to_ten", "greater_100"),
-                    (lowest, zer_to_one, ten_to_one, hundred_to_ten, greater_100)):
+                    ("lowest", "zer_to_one", "five_to_one", "ten_to_five", "hundred_to_ten", "greater_100"),
+                    (lowest, zer_to_one, five_to_one, ten_to_five, hundred_to_ten, greater_100)):
                 curr_array = [round(len(fraction[fraction[method] == num]) *100 / len(fraction), 2) for num in range(1, 7)]
                 values_array.append(curr_array)
 
@@ -138,89 +129,14 @@ def generate_plot(dataframe, args, nrows=2, ncols=5):
                            0.85,  # Right
                            0.9])  # Top
 
-    # for curr_height, tid in enumerate(dataframe.tid[:100]):
-    #     vals = dataframe[dataframe.tid == tid][dataframe.columns[2:]].astype(int).values[0]
-    #     # print(curr_height, vals)
-    #     for num in range(1,8):
-    #         _bar = []
-    #         for val in vals:
-    #             if val == num:
-    #                 _bar.append(1)
-    #             else:
-    #                 _bar.append(0)
-    #         plt.bar(_bar, _bar, color=colors[num], bottom=curr_height)
-    #     # print(curr_height)
-
     if args.out is None:
         print("Showing the plot")
         plt.show()
     else:
-        plt.savefig(args.out, format=args.format, dpi=args.dpi, transparent=args.opaque)
-    # print("Creating the matrix")
-    # data_matrix = base.data_matrix(dataframe[dataframe.columns[2:]])
-    # print("Matrix created, setting the colnames")
-    # data_matrix.colnames = rpy2.robjects.vectors.StrVector(dataframe.columns[2:])
-    # print("Creating the output TIFF")
-    #
-    # tiff = grdevices.tiff(jpeg, width=13, height=13, units="in", res=300)
-    # print("Created the output TIFF")
-    #
-    # colors = rpy2.robjects.vectors.StrVector(["white", "darkgrey", "black",
-    #                                           # '"lightblue", "orange",
-    #                                           "green", "red"])
-    #
-    # rowSide = rpy2.robjects.vectors.StrVector(["gray"]*greater_100 + ["violet"]*hundred_to_ten +
-    #                                           ["sky blue"]*ten_to_one +
-    #                                           ["light green"]*zer_to_one +
-    #                                           ["yellow"]*lowest)
-    # r.par(mai=rpy2.robjects.vectors.FloatVector([0, 0, 0, 0]))
-    # print("Creating the HeatMap")
-    # graphics.plot_new()
-    # gplots = importr("gplots")
-    # # print(base.dim(data_matrix))
-    # # base.heatmap(data_matrix)
-    # # gplots.heatmap_2(data_matrix, RowSideColors=rowSide)
-    # # data_matrix = data_matrix[:1000]
-    # gplots.heatmap_2(data_matrix,
-    #                  RowSideColors=rowSide,
-    #                  col=colors,
-    #                  dendogram="none",
-    #                  breaks=numpy.arange(0.5, 8.5),
-    #                  density_info="none",
-    #                  trace="none",
-    #                  margins=rpy2.robjects.vectors.IntVector([18,15]),
-    #                  cexCol=2, cexMain=10,
-    #                  # par=r.par(cex_main=10),
-    #                  cex_axis=1, cex_main=5, cex_lab=3, cex_sub=3,
-    #                  col_axis="red", col_lab="red",
-    #                  key=False,
-    #                  Rowv="NA",
-    #                  Colv="NA")
-    #
-    # #                  density_info="none",
-    #
-    # print("Creating the legend")
-    # r.legend("top", fill=colors,
-    #          legend=rpy2.robjects.vectors.StrVector(["1.No Overlap",
-    #                                                  "2. Fragment or intronic",
-    #                                                  "3. Fusion",
-    #                                                  "4. Alternative splicing",
-    #                                                  "5. Match (=,_)"]),
-    #          cex=1.8,
-    #          title="Class code legend")
-    #
-    #
-    # r.legend("left",
-    #          legend=rpy2.robjects.vectors.StrVector([">100 TPM", "10-100 TPM",
-    #                                                  "1-10 TPM", "0.01-1 TPM", "upto 0.01 TPM"]),
-    #          col=rpy2.robjects.vectors.StrVector(["gray", "violet",
-    #                                               "sky blue", "light green", "yellow"]),
-    #          cex=1.8,
-    #          lty=1, lwd=10, title="TPM")
-    #
-    # print("Finished")
-    #
-    # grdevices.dev_off()
+        plt.savefig(args.out,
+                    format=options["format"],
+                    dpi=options["dpi"],
+                    transparent=(not options["opaque"]))
 
 
 def analyse_refmap(input_file, label, values):
@@ -281,27 +197,13 @@ def main():
     parser.add_argument("--quant_file", "-q",
                         required=True,
                         type=argparse.FileType("r"))
-    parser.add_argument("--opaque", action="store_false", default=True,
-                        help="Flag. If set, the background of the figure will be white and opaque.")
-    parser.add_argument("-l", "--labels", default=None, type=str, nargs="+",
-                        help="Labels for the input files, comma separated. Required.", required=True)
-    parser.add_argument("-cm", "--colourmap", default="RdYlBu_r",
-                        help="Colourmap to be used.")
-    parser.add_argument("--dpi", default=600, type=int)
-    parser.add_argument("--format", default="svg", choices=["svg",
-                                                            "pdf",
-                                                            "png"])
+    parser.add_argument("-c", "--configuration", required=True, type=argparse.FileType("r"))
     parser.add_argument("--out", nargs="?", type=str, default=None,
                         help="Optional output file name. Default: None (show to stdout)")
     parser.add_argument("--title", type=str, default="")
-    parser.add_argument("input_files", help="The RefMap input files", nargs="+")
     args = parser.parse_args()
 
-    # args.labels = args.labels.split(",")
-    if len(args.labels) != len(args.input_files):
-        raise ValueError("Labels must be the same number as input files!")        
-
-    # Create data dictionary
+    options = parse_configuration(args)
     values = dict()
 
     # Retrieve FPKM
@@ -310,11 +212,19 @@ def main():
         values[row["target_id"]]["TPM"] = float(row["tpm"])
         values[row["target_id"]]["tid"] = row["target_id"]
 
-    for input_file, label in zip(args.input_files, args.labels):
-        values = analyse_refmap(input_file, label, values)
+    labels = []
+    for aligner in ("STAR", "TopHat"):
+        for method in options["methods"]:
+            label = "{} ({})".format(method, aligner)
+            labels.append(label)
+            input_file = "{}.refmap".format(
+                re.sub(".stats", "", options["methods"][method][aligner][0]))
+            values = analyse_refmap(input_file,
+                                    label,
+                                    values)
 
     tids = set(values.keys())
-    right_total = len(args.labels) + 2
+    right_total = len(labels) + 2
     for tid in tids:
         if len(values[tid].keys()) == 2:
             del values[tid]
@@ -337,8 +247,8 @@ def main():
             data[key].append(values[tid][key])
 
             #        out.writerow(values[tid])
-    data = pandas.DataFrame(data, columns=["tid", "TPM"] + args.labels)
-    generate_plot(data, args)
+    data = pandas.DataFrame(data, columns=["tid", "TPM"] + labels)
+    generate_plot(data, args, options)
 
     return
 

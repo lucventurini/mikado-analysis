@@ -1,21 +1,17 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
-import os
 import matplotlib.lines
 import matplotlib.patches
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors
 import numpy as np
-from collections import OrderedDict
 import matplotlib.ticker as ticker
 from math import ceil, floor
 from itertools import zip_longest
-import yaml
 from collections import OrderedDict
-from operator import itemgetter
+from .utils import parse_configuration
 
 __doc__ = """Script to automate the plots for the Mikado compare statistics"""
 
@@ -36,43 +32,12 @@ def main():
     parser = argparse.ArgumentParser(__doc__,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-c", "--configuration", required=True, type=argparse.FileType("r"))
+    parser.add_argument("--out", required=True)
     parser.add_argument("--title", default="Mikado stats")
     args = parser.parse_args()
 
-    options = yaml.load(args.configuration)
-    args.configuration.close()
-
-    for method in options["methods"]:
-        for key in ("STAR", "colour", "index", "TopHat"):
-            if key not in options["methods"][method]:
-                raise KeyError("{} not found for {}".format(key.capitalize(),
-                                                            method))
-        for key in ("STAR", "TopHat"):
-            if not isinstance(options["methods"][method][key], list):
-                raise TypeError("Invalid type for aligner {}: {}".format(
-                    key, type(options["methods"][method][key])))
-            elif len(options["methods"][method][key]) != 2:
-                raise ValueError("Invalid number of files specified for {} / {}".format(
-                    method, key))
-            elif any(not os.path.exists(_) for _ in options["methods"][method][key]):
-                raise OSError("Files not found: {}".format(", ".join(
-                    options["methods"][method][key])))
-
-    new_methods = OrderedDict()
-
-    for index, method in sorted([(options["methods"][method]["index"], method)
-                          for method in options["methods"]], key=itemgetter(0)):
-        new_methods[method] = options["methods"][method]
-
-    options["methods"] = new_methods
-
-    if len(set(options["methods"][method]["colour"]
-               for method in options["methods"])) != len(options["methods"]):
-        raise ValueError("Invalid unique number of colours specified!")
-
-    if options["format"] not in ("svg", "png", "tiff"):
-        raise ValueError("Invalid output format specified: {}".format(
-            options["format"]))
+    options = parse_configuration(args)
+    options["out"] = args.out
 
     stats = OrderedDict()
     figure, axes = plt.subplots(nrows=2,

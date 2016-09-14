@@ -1,7 +1,5 @@
 import rpy2.robjects
-import sys
 import csv
-import os
 import rpy2.robjects
 from collections import OrderedDict, Counter
 from rpy2.robjects.packages import importr
@@ -9,6 +7,8 @@ import itertools
 import argparse
 import matplotlib.cm as cm
 import matplotlib.colors
+import re
+from .utils import parse_configuration
 
 
 def main():
@@ -18,32 +18,24 @@ def main():
                         "--type",
                         choices=["missing", "full", "fusion"],
                         required=True)
-    parser.add_argument("-r", "--refmap", required=True,
-                        nargs="+")
-    parser.add_argument("-l", "--labels", required=True,
-                        nargs="+")
-    parser.add_argument("-cm", "--colourmap", default="gist_rainbow",
-                        help="Colourmap to be used.")
-    parser.add_argument("-c", "--colours", nargs="+",
-                        help="Colors to use.")
+    parser.add_argument("-c", "--configuration", required=True, type=argparse.FileType("r"))
+    parser.add_argument("-em", "--exclude-mikado", dest="exclude",
+                        action="store_true", default=False,
+                        help="Flag. If set, Mikado results will be excluded")
     parser.add_argument("-o", "--out",
-                        type=str, help="Output file", default="venn.svg")
-    parser.add_argument("--format", choices=["svg", "tiff", "png"], default="tiff")
+                        type=str, help="Output file", required=True)
+    parser.add_argument("--format", choices=["svg", "tiff", "png"], default=None)
+    parser.add_argument("-a", "--aligner", choices=["STAR", "TopHat"],
+                        required=True)
     parser.add_argument("--transcripts", action="store_true", default=False,
                         help="Flag. If set, Venn plotted against transcripts, not genes.")
     parser.add_argument("--title", default="Venn Diagram")
     args = parser.parse_args()
 
-    if len(args.refmap) != len(args.labels):
-        print("Incorrect number of labels specified!")
-        parser.print_help()
-        sys.exit(1)
-    elif len(args.refmap) > 5:
-        print("It is impossible for me to create a Venn plot with more than 5 circles.")
-        parser.print_help()
-        sys.exit(1)
+    options = parse_configuration(args, exclude_mikado=args.exclude)
 
-    sets = OrderedDict.fromkeys(args.labels)
+    sets = OrderedDict.fromkeys(options["methods"])
+
     for k in sets:
         sets[k] = set()
 
@@ -53,29 +45,35 @@ def main():
     # Update the sets for each gene and label
     if args.transcripts is True:
         colname = "ref_id"
-        tag="transcripts"
+        ccode = "ccode"
+        tag = "transcripts"
     else:
         colname = "ref_gene"
+        ccode = "best_ccode"
         tag = "genes"
-    for val, refmap in zip(args.labels, args.refmap):
-        tsv = csv.DictReader(open("{0}".format(refmap)), delimiter="\t")
-        for row in tsv:
-            if first:
-                total.update([row[colname]])
-            if row["ccode"].lower() in ("na", "x", "p", "i", "ri") and args.type == "missing":
-                sets[val].add(row[colname])
-            elif row["ccode"] in ("=", "_") and args.type == "full":
-                sets[val].add(row[colname])
-            elif row["ccode"][0] == "f" and args.type == "fusion":
-                sets[val].add(row[colname])
-            else:
-                continue
-        if first:
-            for gid in total:
-                total[gid] = 0
-            first = False
 
-    r = rpy2.robjects.r  # Start the R thread                                                                                       
+    for method in options["methods"]:
+        refmap = "{}.refmap".format(
+            re.sub(".stats$", "", options["methods"][method][args.aligner][0]))
+        with open(refmap) as ref:
+            tsv = csv.DictReader(ref, delimiter="\t")
+            for row in tsv:
+                if first:
+                    total.update([row[colname]])
+                if row[ccode].lower() in ("na", "x", "p", "i", "ri") and args.type == "missing":
+                    sets[method].add(row[colname])
+                elif row[ccode] in ("=", "_") and args.type == "full":
+                    sets[method].add(row[colname])
+                elif row[ccode][0] == "f" and args.type == "fusion":
+                    sets[method].add(row[colname])
+                else:
+                    continue
+            if first:
+                for gid in total:
+                    total[gid] = 0
+                first = False
+
+    r = rpy2.robjects.r  # Start the R thread
     base = importr("base")
     venn = importr("VennDiagram")
     grdevices = importr("grDevices")
@@ -91,49 +89,41 @@ def main():
     print("Total", len(set.union(*sets.values())))
     counts = list(total.values())
 
-    for num in range(len(args.labels), 0, -1):
+    for num in range(len(options["methods"]), 0, -1):
         tot = counts.count(num)
         cum_tot = sum(counts.count(x) for x in range(num+1, 6)) + tot
         print("Genes {0} by {1} methods ({2} cumulative): {3}".format(
             args.type, num, cum_tot, tot))
     print("")
 
-    if len(args.labels) == 2:
+    if len(options["methods"]) == 2:
         nums["cross.area"] = len(set.intersection(
             sets[corrs[1]], sets[corrs[2]]))
     else:
-        for num_combs in range(2, len(args.labels) + 1):
-            for comb in itertools.combinations(range(1, len(args.labels) + 1), num_combs):
+        for num_combs in range(2, len(options["methods"]) + 1):
+            for comb in itertools.combinations(range(1, len(options["methods"]) + 1), num_combs):
                 # print(comb)
                 index = "".join([str(x) for x in comb])
                 curr_sets = [sets[corrs[num]] for num in comb]
                 nums["n{0}".format(index)] = len(set.intersection(*curr_sets))
 
-    # for num_combs in range(2,6):
-    #     for comb in itertools.combinations(range(1,6), num_combs):
-    #         index = "".join([str(x) for x in comb])
-    #         curr_sets = [sets[corrs[num]] for num in comb]
-    #         nums["n{0}".format(index)] = len(set.intersection(*curr_sets))
-
-    # Get the colours from the ColorMap
-    # return
-    if args.colours is None:
-        color_normalizer = matplotlib.colors.Normalize(0, len(args.labels))
+    if options["colourmap"]["use"] is True:
+        color_normalizer = matplotlib.colors.Normalize(0, len(options["methods"]))
         color_map = cm.get_cmap(args.colourmap)
-        cols = [matplotlib.colors.rgb2hex(color_map(color_normalizer(index))) for index in range(len(args.labels))]
+        cols = [matplotlib.colors.rgb2hex(color_map(color_normalizer(index)))
+                for index in range(len(options["methods"]))]
         cols = rpy2.robjects.vectors.StrVector(cols)
     else:
-        print(args.colours)
-        cols = rpy2.robjects.vectors.StrVector(args.colours)
-    #
+        cols = [options["methods"][_]["colour"] for _ in options["methods"]]
+        cols = rpy2.robjects.vectors.StrVector(cols)
 
-    if len(args.labels) == 1:
+    if len(options["methods"]) == 1:
         draw_function = venn.draw_single_venn
-    elif len(args.labels) == 2:
+    elif len(options["methods"]) == 2:
         draw_function = venn.draw_pairwise_venn
-    elif len(args.labels) == 3:
+    elif len(options["methods"]) == 3:
         draw_function = venn.draw_triple_venn
-    elif len(args.labels) == 4:
+    elif len(options["methods"]) == 4:
         draw_function = venn.draw_quad_venn
     else:
         draw_function = venn.draw_quintuple_venn
@@ -144,7 +134,7 @@ def main():
             2: [0.1, 0.1],
             3: [0.1, 0.1, 0.1],
             4: [0.3, 0.25, 0.15, 0.15],
-            5: [0.2, 0.3, 0.2, 0.25, 0.25]
+            5: [0.25, 0.37, 0.25, 0.27, 0.33]
         }
     else:
         distances = {
@@ -152,16 +142,16 @@ def main():
             2: [0.1, 0.1],
             3: [0.1, 0.1, 0.1],
             4: [0.35, 0.3, 0.2, 0.25],
-            5: [0.2, 0.3, 0.2, 0.25, 0.25]
+            5: [0.3, 0.3, 0.27, 0.28, 0.28]
         }
 
     # draw_function = venn.venn_diagram
     gridExtra = importr("gridExtra")
     grid = importr("grid")
     dev_args = {"width": 960, "height": 960}
-    if args.format == "tiff":
+    if options["format"] == "tiff":
         device = grdevices.tiff
-    elif args.format == "png":
+    elif options["format"] == "png":
         device = grdevices.png
         dev_args["bg"] = "transparent"
     else:
@@ -171,10 +161,14 @@ def main():
 
     drawn = draw_function(height=4000, width=4000,
                           fill=cols,
-                          category=rpy2.robjects.vectors.StrVector(["{}\n({} {})".format(x.capitalize(), len(sets[x]), tag) for x in sets.keys()]),
+                          category=rpy2.robjects.vectors.StrVector(
+                              ["{}\n({:,}\n {})".format(
+                                  "\n".join([_.capitalize() for _ in x.split()]),
+                                  len(sets[x]), tag) for x in sets.keys()]),
                           margin=0.2,
-                          cat_dist=rpy2.robjects.vectors.FloatVector(distances[len(args.labels)]),
-                          cat_cex=3,
+                          cat_dist=rpy2.robjects.vectors.FloatVector(distances[
+                                                                         len(options["methods"])]),
+                          cat_cex=2.5,
                           cat_col=cols,
                           cex=2,
                           cex_main=args.title,
