@@ -1,10 +1,13 @@
 import matplotlib.pyplot as plt
-from collections import OrderedDict as odict
+from collections import OrderedDict
+from operator import itemgetter
 import matplotlib.lines as mlines
 import os
 import csv
 import argparse
 from itertools import zip_longest
+import yaml
+import re
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -17,15 +20,48 @@ def grouper(iterable, n, fillvalue=None):
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--labels", nargs=5, required=True)
-    parser.add_argument("-o", "--out", default=None)
-    parser.add_argument("--star", nargs=5)
-    parser.add_argument("--tophat", nargs=5)
+    parser.add_argument("-c", "--configuration", required=True, type=argparse.FileType("r"))
     parser.add_argument("--log", action="store_true", default=False)
     # parser.add_argument("refmap", nargs=10, type=argparse.FileType("rt"))
     args = parser.parse_args()
 
-    data = odict()
+    data = OrderedDict()
+
+    options = yaml.load(args.configuration)
+    args.configuration.close()
+
+    for method in options["methods"]:
+        for key in ("STAR", "colour", "index", "TopHat"):
+            if key not in options["methods"][method]:
+                raise KeyError("{} not found for {}".format(key.capitalize(),
+                                                            method))
+        for aligner in ("STAR", "TopHat"):
+            if not isinstance(options["methods"][method][aligner], list):
+                raise TypeError("Invalid type for aligner {}: {}".format(
+                    aligner, type(options["methods"][method][aligner])))
+            elif len(options["methods"][method][aligner]) != 2:
+                raise ValueError("Invalid number of files specified for {} / {}".format(
+                    method, aligner))
+            elif any(not os.path.exists(_) for _ in options["methods"][method][aligner]):
+                raise OSError("Files not found: {}".format(", ".join(
+                    options["methods"][method][aligner])))
+
+    new_methods = OrderedDict()
+
+    for index, method in sorted([(options["methods"][method]["index"], method)
+                          for method in options["methods"]], key=itemgetter(0)):
+        new_methods[method] = options["methods"][method]
+
+    options["methods"] = new_methods
+
+    if len(set(options["methods"][method]["colour"]
+               for method in options["methods"])) != len(options["methods"]):
+        raise ValueError("Invalid unique number of colours specified!")
+
+    if options["format"] not in ("svg", "png", "tiff"):
+        raise ValueError("Invalid output format specified: {}".format(
+            options["format"]))
+
 
     # text = """	Full	Missed	Fused
     # CLASS (STAR)	13428	7901	1702
@@ -40,9 +76,11 @@ def main():
     # Mikado (TopHat)	15721	6119	797
     # """
 
-    for label, star, th in zip(args.labels, args.star, args.tophat):
-        for aligner, orig_refmap in zip(["STAR", "TopHat"], [star, th]):
+    for label in options["methods"]:
+        for aligner in ("STAR", "TopHat"):
             data["{} ({})".format(label, aligner)] = [set(), set(), set()]
+            orig_refmap = "{}.refmap".format(
+                re.sub(".stats$", "", options["methods"][label][aligner][0]))
             with open(orig_refmap) as refmap:
                 for row in csv.DictReader(refmap, delimiter="\t"):
                     if row["best_ccode"] in ("=", "_"):
@@ -51,9 +89,6 @@ def main():
                         data["{} ({})".format(label, aligner)][2].add(row["ref_gene"])
                     elif row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
                         data["{} ({})".format(label, aligner)][1].add(row["ref_gene"])
-            # with open(filter_refmap) as refmap:
-            #     for row in csv.DictReader(refmap, delimiter="\t"):
-
             for num in range(3):
                 data["{} ({})".format(label, aligner)][num] = len(
                     data["{} ({})".format(label, aligner)][num])
@@ -75,12 +110,12 @@ def main():
     plot.plot((1, max(max(data[_]) + 1000 for _ in data)), (3, 3), 'k-')
     newticks = ["Fused genes", "Missed genes", "Recovered genes"]
 
-    colors = ["lightgreen", "pink", "blue", "yellow", "red"]
     shape = ["o", "^"]
 
     handles = []
     for index, method in enumerate(data.keys()):
-        color = colors[int(index / 2)]
+        color = options["methods"][method]["color"]
+        # color = colors[int(index / 2)]
         marker = shape[index % 2]
         handle = mlines.Line2D([], [], markersize=5, color=color, marker=marker, label=method)
         # handles.append(handle)
