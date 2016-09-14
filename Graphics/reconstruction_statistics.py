@@ -12,6 +12,7 @@ from math import ceil, floor
 from itertools import zip_longest
 from collections import OrderedDict
 from utils import parse_configuration
+import os
 
 __doc__ = """Script to automate the plots for the Mikado compare statistics"""
 
@@ -37,7 +38,7 @@ def main():
     args = parser.parse_args()
 
     options = parse_configuration(args)
-    options["out"] = args.out
+    options["out"] = os.path.splitext(args.out)[0]
 
     stats = OrderedDict()
     figure, axes = plt.subplots(nrows=2,
