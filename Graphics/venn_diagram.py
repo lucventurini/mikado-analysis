@@ -149,6 +149,9 @@ def main():
     gridExtra = importr("gridExtra")
     grid = importr("grid")
     dev_args = {"width": 960, "height": 960}
+    if args.format is not None:
+        options["format"] = args.format
+
     if options["format"] == "tiff":
         device = grdevices.tiff
     elif options["format"] == "png":
