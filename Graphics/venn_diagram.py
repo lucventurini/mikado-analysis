@@ -8,7 +8,7 @@ import argparse
 import matplotlib.cm as cm
 import matplotlib.colors
 import re
-from .utils import parse_configuration
+from utils import parse_configuration
 
 
 def main():

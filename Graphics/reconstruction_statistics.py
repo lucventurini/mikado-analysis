@@ -11,7 +11,7 @@ import matplotlib.ticker as ticker
 from math import ceil, floor
 from itertools import zip_longest
 from collections import OrderedDict
-from .utils import parse_configuration
+from utils import parse_configuration
 
 __doc__ = """Script to automate the plots for the Mikado compare statistics"""
 

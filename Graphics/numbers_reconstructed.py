@@ -5,7 +5,7 @@ import csv
 import argparse
 from itertools import zip_longest
 import re
-from .utils import parse_configuration
+from utils import parse_configuration
 import os
 
 
