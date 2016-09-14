@@ -30,7 +30,6 @@ def main():
 
     options = parse_configuration(args)
 
-
     for label in options["methods"]:
         for aligner in ("STAR", "TopHat"):
             data[(label, aligner)] = [set(), set(), set()]
@@ -47,15 +46,12 @@ def main():
             for num in range(3):
                 data[(label, aligner)][num] = len(data[(label, aligner)][num])
 
-    print(*data.items(), sep="\n")
+    # print(*data.items(), sep="\n")
 
     figure, axes = plt.subplots(nrows=3,
                                 ncols=1,
                                 dpi=300, figsize=(8, 6))
-    # print(axes)
-    recovered = axes[0]
-    missed = axes[1]
-    fused = axes[2]
+    figure.suptitle(args.title)
 
     newticks = ["Recovered genes", "Missed genes", "Fused genes"]
     for pos, ax in enumerate(axes):
@@ -114,7 +110,6 @@ def main():
                   loc=(0.1, 0.09), handles=handles,
                   scatterpoints=1,
                   ncol=3, fontsize=10, markerscale=0.6)
-    plt.title(args.title)
     plt.tight_layout(pad=0.5,
                      h_pad=1,
                      w_pad=1,
