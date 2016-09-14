@@ -24,14 +24,12 @@ def sort_values(key, dictionary):
 def generate_plot(dataframe, args, options, nrows=2, ncols=5):
 
     dataframe = dataframe.sort_values("TPM", ascending=True)
-    print("Sorted dataframe", file=sys.stderr)
     greater_100 = dataframe[(dataframe.TPM > 100)]
     hundred_to_ten = dataframe[(dataframe.TPM <= 100) & (dataframe.TPM > 10)]
     ten_to_five = dataframe[(dataframe.TPM > 5) & (dataframe.TPM <= 10)]
     five_to_one = dataframe[(dataframe.TPM > 1) & (dataframe.TPM <= 5)]
     zer_to_one = dataframe[(dataframe.TPM > 0.01) & (dataframe.TPM <= 1)]
     lowest = dataframe[(dataframe.TPM <= 0.01)]
-    print("Got the intervals", file=sys.stderr)
     plt.style.context("ggplot")
 
     color_map = cm.get_cmap(options["colourmap"]["name"])
@@ -41,8 +39,6 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
 
     for num in range(3, 7*2 + 1):
         colors[num] = color_map(color_normalizer(num))
-
-    print(*colors.items(), sep="\n")
 
     # plot = plt.plot()
 
@@ -100,7 +96,6 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
             # print(method, values_array.shape, values_array)
 
             X = numpy.arange(values_array.shape[1])
-            print(list(range(values_array.shape[0])))
             for i in range(values_array.shape[0]):
                 bar = plot.bar(X, values_array[i],
                          bottom = numpy.sum(values_array[:i], axis=0),
@@ -241,7 +236,6 @@ def main():
     keys = None
     for tid in values:
         if keys is None:
-            print(values[tid].keys())
             keys = values[tid].keys()
         for key in values[tid]:
             data[key].append(values[tid][key])
