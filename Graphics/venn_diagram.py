@@ -86,6 +86,55 @@ def main():
         total.update(list(sets[cat]))
         print(cat.capitalize(), nums["area{0}".format(num)])
 
+    unions = dict()
+    for num in range(1, len(options["methods"]) + 1):
+        unions[num] = set()
+
+    for element, count in total.most_common():
+        if count == 0:
+            continue
+        unions[count].add(element)
+        # for num in range(len(options["methods"]), count - 1, -1):
+        #     unions[num].add(element)
+
+    print("Method",
+          *options["methods"],
+          *["{} method{}".format(_,
+                                 "s" if _ > 1 else "") for _ in range(1, len(options["methods"]))],
+          sep="\t")
+
+    for method in list(options["methods"]) + list(range(1, len(options["methods"]))):
+        if method in options["methods"]:
+            row = [method]
+            mine = sets[method]
+            for other_method in options["methods"]:
+                if other_method == method:
+                    row.append(len(sets[method]))
+                else:
+                    row.append("{:.2f}%".format(100 * len(set.intersection(
+                        mine, sets[other_method])) / len(set.union(mine, sets[other_method]))))
+        else:
+            row = ["{} method{}".format(method,
+                                        "s" if method > 1 else "")]
+            mine = unions[method]
+            for other_method in options["methods"]:
+                if other_method == method:
+                    row.append(len(sets[method]))
+                else:
+                    row.append("{:.2f}%".format(100 * len(set.intersection(
+                        mine, sets[other_method])) / len(unions[method])))
+
+        for num in range(1, len(options["methods"])):
+            if method == num:
+                row.append(len(unions[method]))
+            elif method in unions:
+                row.append("--")
+            else:
+                row.append("{:.2f}%".format(100 * len(set.intersection(
+                    mine, unions[num])) / len(unions[num])))
+
+        print(*row, sep="\t")
+
     print("Total", len(set.union(*sets.values())))
     counts = list(total.values())
 
@@ -159,7 +208,7 @@ def main():
         dev_args["bg"] = "transparent"
     else:
         device = grdevices.svg
-    
+
     device(args.out, **dev_args)
 
     drawn = draw_function(height=4000, width=4000,
