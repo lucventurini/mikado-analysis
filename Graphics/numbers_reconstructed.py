@@ -96,7 +96,6 @@ def main():
         marker = shape[index % 2]
         cat = "{} ({})".format(method, aligner)
         labels.append(cat)
-        handle = mlines.Line2D([], [], markersize=5, color=color, marker=marker, label=cat, alpha=0.6)
         # handles.append(handle)
         for pos, point in enumerate(data[tup]):
             handle = axes[pos].scatter(point,
@@ -110,6 +109,7 @@ def main():
             handle.get_sketch_params()
             if pos == 0:
                 handles.append(handle)
+        handle = mlines.Line2D([], [], markersize=5, color=color, marker=marker, label=cat, alpha=0.6)
 
     # handles, labels = plot.get_legend_handles_labels()
     plt.figlegend(labels=labels,
