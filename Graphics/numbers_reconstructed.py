@@ -41,7 +41,13 @@ def main():
                         data[(label, aligner)][0].add(row["ref_gene"])
                     elif row["best_ccode"][0] == "f":
                         data[(label, aligner)][2].add(row["ref_gene"])
-                    elif row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
+                    # elif row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
+                    #     data[(label, aligner)][1].add(row["ref_gene"])
+            filtered_refmap = "{}.refmap".format(
+                re.sub(".stats$", "", options["methods"][label][aligner][1]))
+            with open(filtered_refmap) as refmap:
+                for row in csv.DictReader(refmap, delimiter="\t"):
+                    if row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
                         data[(label, aligner)][1].add(row["ref_gene"])
             for num in range(3):
                 data[(label, aligner)][num] = len(data[(label, aligner)][num])
@@ -90,11 +96,12 @@ def main():
         marker = shape[index % 2]
         cat = "{} ({})".format(method, aligner)
         labels.append(cat)
-        handle = mlines.Line2D([], [], markersize=5, color=color, marker=marker, label=cat)
+        handle = mlines.Line2D([], [], markersize=5, color=color, marker=marker, label=cat, alpha=0.6)
         # handles.append(handle)
         for pos, point in enumerate(data[tup]):
             handle = axes[pos].scatter(point,
                                         1,
+                                        alpha=1,
                                         label=cat,
                                         color=color,
                                         marker=marker,
