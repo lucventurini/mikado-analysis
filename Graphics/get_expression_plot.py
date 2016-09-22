@@ -23,14 +23,19 @@ def sort_values(key, dictionary):
 
 def generate_plot(dataframe, args, options, nrows=2, ncols=5):
 
-    dataframe = dataframe.sort_values("TPM", ascending=True)
-    greater_100 = dataframe[(dataframe.TPM > 100)]
-    hundred_to_ten = dataframe[(dataframe.TPM <= 100) & (dataframe.TPM > 10)]
-    ten_to_five = dataframe[(dataframe.TPM > 5) & (dataframe.TPM <= 10)]
-    five_to_one = dataframe[(dataframe.TPM > 1) & (dataframe.TPM <= 5)]
-    zer_to_one = dataframe[(dataframe.TPM > 0.01) & (dataframe.TPM <= 1)]
-    lowest = dataframe[(dataframe.TPM <= 0.01)]
     plt.style.context("ggplot")
+    dataframe = dataframe.sort_values("TPM", ascending=True)
+
+    order = {0: [dataframe[(dataframe.TPM <= 0.01)],
+                      "$\leq$ $0.01$"],
+             1: [dataframe[(dataframe.TPM > 0.01) & (dataframe.TPM <= 2)],
+                      "$1$ $-$ $2$"],
+             2: [dataframe[(dataframe.TPM > 2) & (dataframe.TPM <= 10)],
+                      "$2$ $-$ $10$"],
+             3: [dataframe[(dataframe.TPM <= 100) & (dataframe.TPM > 10)],
+                      "$10$ $-$ $100$"],
+             4: [dataframe[(dataframe.TPM > 100)],
+                      "$\geq$ 100"]}
 
     color_map = cm.get_cmap(options["colourmap"]["name"])
     color_normalizer = matplotlib.colors.Normalize(2, 15)
@@ -49,8 +54,6 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
     methods = dataframe.columns[2:]
     current = 0
 
-    newticks = ["0 - 0.01", "0.01 - 1", "1-5", "5-10", "10-100", "$\geq$ 100"]
-
     figure.suptitle(" ".join(["${}$".format(re.sub("%", "\%", _)) for _ in args.title.split()]),
                     fontsize=20, style="italic", family="serif")
 
@@ -68,33 +71,52 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
     figure.lines.extend([Xaxis, Yaxis])
 
     figure.text(0.92, 0.12, "$Expression$ $(TPM)$", ha="center", fontsize=15)
-    figure.text(0.02, 0.6, "$Transcripts$ $per$ $category$ $(\%)$", va="center", fontsize=15, rotation="vertical")
+    figure.text(0.02,   # X location
+                0.6,  # Y location
+                "$Transcripts$ $per$ $category$ $(\%)$",  # Title
+                va="center",
+                fontsize=15,
+                rotation="vertical")
 
     legend_handles = []
-    for row in range(nrows):
-        for col in range(ncols):
-            if current == len(methods):
-                axes[row, col].xaxis.set_visible(False)
-                axes[row, col].yaxis.set_visible(False)
-                continue
-            method = methods[current]
-            current +=1
-            plot = axes[row, col]
-            _axes = plot.axes
-            # _axes.xaxis.set_major_locator(ticker.MultipleLocator(1))
-            _axes.set_xticks(numpy.arange(0.5, 6.5,1))
-            plot.set_xticklabels(newticks, fontsize=10)
-            values_array = []
-            for name, fraction in zip(
-                    ("lowest", "zer_to_one", "five_to_one", "ten_to_five", "hundred_to_ten", "greater_100"),
-                    (lowest, zer_to_one, five_to_one, ten_to_five, hundred_to_ten, greater_100)):
-                curr_array = [round(len(fraction[fraction[method] == num]) *100 / len(fraction), 2) for num in range(1, 7)]
-                values_array.append(curr_array)
+    current = 0
 
+    # Structure of the dataset:
+    # <TID> <Expr> <Method1> <Method2> ... <MethodN>
+
+    for row, aligner in enumerate(["STAR", "TopHat"]):
+        for col in range(5):
+            # if current == 6:
+            #     axes[row, col].xaxis.set_visible(False)
+            #     axes[row, col].yaxis.set_visible(False)
+            #     continue
+            fraction = order[col][0]
+            plot = axes[row, col]
+            plot.set_title("{} $TPM$ (${}$)".format(order[col][1], aligner))
+            plot.set_ylim(0, 100)
+            _axes = plot.axes
+            _axes.set_xticks(numpy.arange(0, 5, 1))
+            curr_labels = []
+
+            for tick in axes[row,col].get_xticklabels():
+                tick.set_rotation(60)
+            values_array = []
+            for method in methods:
+                if aligner not in method:
+                    continue
+                # Get for each method the number of transcripts
+                # Corresponding to each ccode
+                curr_labels.append("\n".join([
+                    "${}$".format(_) for _ in
+                    re.sub(" \({}\)".format(aligner), "", method).split()
+                ]))
+
+                curr_array = [round(len(fraction[fraction[method] == num]) *100 / len(fraction), 2)
+                              for num in range(1, 7)]
+                values_array.append(curr_array)
+            plot.set_xticklabels(curr_labels, fontsize=10)
             values_array = numpy.array(values_array)
             values_array = values_array.transpose()
-            # print(method, values_array.shape, values_array)
-
             X = numpy.arange(values_array.shape[1])
             for i in range(values_array.shape[0]):
                 bar = plot.bar(X, values_array[i],
@@ -105,21 +127,18 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
                     bar.get_children()[0].get_sketch_params()
                     legend_handles.append(bar)
 
-            plot.set_ylim(0, 100)
-            plot.set_title(" ".join(["${}$".format(_) for _ in method.split()]))
-            for tick in axes[row,col].get_xticklabels():
-                tick.set_rotation(60)
-
     labels = ["Missed", "Intronic or Fragment", "Fusion", "Different structure",
                           "Contained", "Match"]
     plt.figlegend(labels=labels, framealpha=0.3,
-                  loc="lower center", handles=legend_handles,
-                  ncol=floor(len(labels) / 2) + len(labels) % 2)
+                  loc="center right", handles=legend_handles,
+                  fontsize=12,
+                  ncol=1)
+                  # ncol=floor(len(labels) / 2) + len(labels) % 2)
 
     plt.tight_layout(pad=0.15,
-                     h_pad=.2,
-                     w_pad=0.1,
-                     rect=[0.1,  # Left
+                     h_pad=1,
+                     w_pad=0.5,
+                     rect=[0.07,  # Left
                            0.1,  # Bottom
                            0.85,  # Right
                            0.9])  # Top
@@ -220,13 +239,16 @@ def main():
 
     tids = set(values.keys())
     right_total = len(labels) + 2
+    count_zero = set()
     for tid in tids:
         if len(values[tid].keys()) == 2:
             del values[tid]
         elif values[tid]["TPM"] == 0:
             del values[tid]
+            count_zero.add(tid)
         elif len(values[tid].keys()) != right_total:
             raise KeyError("ID {} has been found only in {}".format(tid, values[tid].keys()))
+    tids = set.difference(tids, count_zero)
     if tids != set(values.keys()):
         print("Removed {} TIDs due to filtering".format(len(tids) - len(set(values.keys()))))
 
