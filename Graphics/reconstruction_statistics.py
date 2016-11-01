@@ -6,9 +6,11 @@ import matplotlib.patches
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors
+import matplotlib.gridspec as gridspec
 import numpy as np
 import matplotlib.ticker as ticker
 from math import ceil, floor
+from scipy.stats import hmean
 from itertools import zip_longest
 from collections import OrderedDict
 from utils import parse_configuration
@@ -41,9 +43,16 @@ def main():
     options["out"] = os.path.splitext(args.out)[0]
 
     stats = OrderedDict()
-    figure, axes = plt.subplots(nrows=2,
-                                ncols=4,
-                                dpi=options["dpi"], figsize=(12, 6))
+
+    # figure = plt.figure(dpi=options["dpi"], figsize=(12, 6))
+
+    # gs = gridspec.GridSpec()
+
+    figure, axes = plt.subplots(
+        nrows=2,
+        ncols=3,
+        dpi=options["dpi"],
+        figsize=(10, 6))
     figure.suptitle(" ".join(["${}$".format(_) for _ in args.title.split()]),
                     fontsize=20, style="italic", family="serif")
 
@@ -62,9 +71,12 @@ def main():
     figure.text(0.92, 0.21, "$Precision$", ha="center", fontsize=15)
     figure.text(0.07, 0.8, "$Recall$", va="center", fontsize=15, rotation="vertical")
 
-    name_ar = np.array([["Base", "Exon", "Intron", "Intron chain"],
-                        ["Transcript (95% nF1)", "Transcript (80% nF1)",
-                         "Gene (95% nF1)", "Gene (80% nF1)"]])
+    # name_ar = np.array([["Base", "Exon", "Intron", "Intron chain"],
+    #                     ["Transcript (95% nF1)", "Transcript (80% nF1)",
+    #                      "Gene (95% nF1)", "Gene (80% nF1)"]])
+
+    name_ar = np.array([["Base", "Exon", "Intron"],
+                        ["Intron chain", "Transcript", "Gene"]])
 
     if options["colourmap"]["use"] is True:
         color_normalizer = matplotlib.colors.Normalize(0, len(options["methods"]))
@@ -72,10 +84,11 @@ def main():
     # mapper = cm.ScalarMappable(colors, "PuOr")
 
     for xrow in (0, 1):
-        for yrow in (0, 1, 2, 3):
+        for yrow in (0, 1, 2):
             key = name_ar[xrow, yrow]
             plot = axes[xrow, yrow]
             plot.grid(True)
+            plot.set(adjustable="box-forced", aspect="equal")
             plot.set_title("{} level".format(key), fontsize=10)
 
             # plot.set_xlabel("Precision", fontsize=10)
@@ -90,12 +103,19 @@ def main():
             orig, filtered = options["methods"][method][aligner]
             orig_lines = [line.rstrip() for line in open(orig)]
             filtered_lines = [line.rstrip() for line in open(filtered)]
-            for index, line_index in enumerate([5, 7, 8, 9, 11, 12, 14, 15]):
+            # for index, line_index in enumerate([5, 7, 8, 9, 11, 12, 14, 15]):
+            for index, line_index in enumerate([5, 7, 8, 9, 12, 15]):
                 precision = float(orig_lines[line_index].split(":")[1].split()[1])
                 recall = float(filtered_lines[line_index].split(":")[1].split()[0])
+                try:
+                    f1 = hmean(np.array([precision, recall]))
+                except TypeError as exc:
+                    raise TypeError("\n".join([str(_) for _ in [(precision, type(precision)),
+                                                                (recall, type(recall)),
+                                                                exc]]))
                 stats[
                     # Name of the statistic:Base, Exon, etc
-                    list(stats.keys())[index]][aligner.encode()].append((precision, recall))
+                    list(stats.keys())[index]][aligner.encode()].append((precision, recall, f1))
 
     handles, labels = None, None
 
