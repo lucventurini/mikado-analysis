@@ -52,8 +52,8 @@ def main():
         ccode = "best_ccode"
         tag = "genes"
 
-    for method in options["methods"]:
-        for aligner in ["STAR", "TopHat"]:
+    for aligner in ["STAR", "TopHat"]:
+        for method in options["methods"]:
             refmap = "{}.refmap".format(
                 re.sub(".stats$", "", options["methods"][method][aligner][0]))
             with open(refmap) as ref:
@@ -76,12 +76,15 @@ def main():
                         total[gid] = 0
                     first = False
 
-    for set_name in sets:
-        sets[set_name] = pd.DataFrame(list(sets[set_name]), columns=["TID"])
+    for aligner in ["STAR", "TopHat"]:
+        for method in sorted(options["methods"].keys()):
+            set_name = "{} ({})".format(method, aligner)
+            print(set_name)
+            sets[set_name] = pd.DataFrame(list(sets[set_name]), columns=["TID"])
 
     pyu.plot(sets,
-             sort_by="degree",
-             inters_size_bounds=(10, 20000),
+             # sort_by="degree",
+             inters_size_bounds=(100, 20000),
              )
     if args.format is None:
         args.format = "svg"
