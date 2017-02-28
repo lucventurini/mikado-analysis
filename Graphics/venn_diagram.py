@@ -1,6 +1,6 @@
+import readline
 import rpy2.robjects
 import csv
-import rpy2.robjects
 from collections import OrderedDict, Counter
 from rpy2.robjects.packages import importr
 import itertools
