@@ -102,7 +102,7 @@ def generate_plot(star_data, tophat_data, merged_data, typ, args, options):
         print("Showing the plot")
         plt.show()
     else:
-        out = os.path.splitext(args.out)[0] + ".{}".format(typ) + os.path.splitext(args.out)[1] + ".".format(args.format)
+        out = os.path.splitext(args.out)[0] + ".{}".format(typ) + os.path.splitext(args.out)[1] + ".{}".format(args.format)
         plt.savefig(out,
                     format=options["format"],
                     dpi=options["dpi"],
