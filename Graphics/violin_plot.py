@@ -170,6 +170,8 @@ def main():
     parser.add_argument("-c", "--configuration", required=True, type=argparse.FileType("r"))
     parser.add_argument("--out", nargs="?", type=str, default=None,
                         help="Optional output file name. Default: None (show to stdout)")
+    parser.add_argument("--format", choices=["svg", "png", "pdf"],
+                        default="svg")
     parser.add_argument("--title", type=str, default="")
     args = parser.parse_args()
 
