@@ -57,12 +57,12 @@ def main():
                     fontsize=20, style="italic", family="serif")
 
     Xaxis = matplotlib.patches.FancyArrow(0.1, 0.19, 0.89, 0,
-                                          width=0.0005,
+                                          width=0.001,
                                           length_includes_head=True,
                                           transform=figure.transFigure, figure=figure,
                                           color="k")
     Yaxis = matplotlib.patches.FancyArrow(0.1, 0.19, 0, 0.7,
-                                          width=0.0005,
+                                          width=0.001,
                                           length_includes_head=True,
                                           transform=figure.transFigure, figure=figure,
                                           color="k")
@@ -87,8 +87,8 @@ def main():
         for yrow in (0, 1, 2):
             key = name_ar[xrow, yrow]
             plot = axes[xrow, yrow]
-            plot.grid(True)
-            plot.set(adjustable="box-forced", aspect="equal")
+            plot.grid(True, linestyle='dotted')
+            # plot.set(adjustable="box-forced", aspect="equal")
             plot.set_title("{} level".format(key), fontsize=10)
 
             # plot.set_xlabel("Precision", fontsize=10)
@@ -133,11 +133,21 @@ def main():
         # plot.axis("scaled")
         # Select a suitable maximum
 
-        x_minimum = max(0, 10 * (floor(min(Xtop.min(), Xstar.min()) / 10.0) - 0.5))
-        y_minimum = max(0, 10 * (floor(min(Ytop.min(), Ystar.min()) / 10.0) - 0.5))
+        x_minimum = max(0,
+                        floor(min(Xtop.min(), Xstar.min())) - 5)
+        y_minimum = max(0,
+                        floor(min(Ytop.min(), Ystar.min())) - 5)
 
-        x_maximum = min(100, 10 * (ceil(max(Xtop.max(), Xstar.max()) / 10.0) + 0.5))
-        y_maximum = min(100, 10 * (ceil(max(Ytop.max(), Ystar.max()) / 10.0) + 0.5))
+        x_maximum = min(100,
+                        ceil(max(Xtop.max(), Xstar.max())) + 5)
+        y_maximum = min(100,
+                        ceil(max(Ytop.max(), Ystar.max())) + 5)
+
+        # x_minimum = max(0, 10 * (floor(min(Xtop.min(), Xstar.min()) / 10.0)))
+        # y_minimum = max(0, 10 * (floor(min(Ytop.min(), Ystar.min()) / 10.0)))
+
+        # x_maximum = min(100, 10 * (ceil(max(Xtop.max(), Xstar.max()) / 10.0)))
+        # y_maximum = min(100, 10 * (ceil(max(Ytop.max(), Ystar.max()) / 10.0)))
 
         x_maximum, y_maximum = [max(x_maximum, y_maximum)] * 2
         x_minimum, y_minimum = [min(x_minimum, y_minimum)] * 2
@@ -149,17 +159,17 @@ def main():
         #     max(Xtop.max(), Xstar.max(), Ystar.max(), Ytop.max()) / 10.0) + 0.5))
         # maximum = 100
 
-        plot.set_xlim(x_minimum, x_maximum)
-        plot.set_ylim(y_minimum, y_maximum)
-        plot.tick_params(axis='both', which='major', labelsize=8)
-        __axes = plot.axes
-        __axes.xaxis.set_major_locator(ticker.MultipleLocator(
-            ceil((x_maximum -x_minimum)/ 20) * 5))
-        __axes.xaxis.set_minor_locator(ticker.MultipleLocator(ceil((x_maximum -x_minimum)/ 100) * 5))
-        __axes.yaxis.set_major_locator(ticker.MultipleLocator(ceil((y_maximum - y_minimum)/ 20) * 5))
-        __axes.yaxis.set_minor_locator(ticker.MultipleLocator(ceil((y_maximum - y_minimum)/ 100) * 5))
+        # __axes.xaxis.set_major_locator(ticker.MultipleLocator(
+        #     ceil((x_maximum -x_minimum)/ 20) * 5))
+        # __axes.xaxis.set_minor_locator(
+        #     ticker.MultipleLocator(ceil((x_maximum -x_minimum) / 100) * 5))
+        # __axes.yaxis.set_major_locator(
+        #     ticker.MultipleLocator(ceil((y_maximum - y_minimum) / 20) * 5))
+        # __axes.yaxis.set_minor_locator(ticker.MultipleLocator(ceil((y_maximum - y_minimum)/ 100) * 5))
 
-        plot.plot(0, 1, ls="--", c=".3")
+        for i in range(0, 100, 10):
+            plot.plot((0, i), (i, 0), color='.9', ls='dashed')
+            plot.plot((i, 100), (100, i), color='.9', ls='dashed')
 
         for index, vals in enumerate(zip(Xtop, Ytop, options["methods"].keys())):
             x, y, label = vals
@@ -179,11 +189,16 @@ def main():
             else:
                 colour = color_map(color_normalizer(options["methods"][label]["index"]))
             plot.scatter(x, y, label="{0} (STAR)".format(label), c=colour,
-                         marker="o",
+                         marker="o", edgecolor="k",
                          s=[50.0], alpha=.8)
 
         if handles is None:
             handles, labels = plot.get_legend_handles_labels()
+        __axes = plot.axes
+        __axes.set_xlim(x_minimum, x_maximum)
+        __axes.set_ylim(y_minimum, y_maximum)
+        __axes.set_aspect("equal")
+        plot.tick_params(axis='both', which='major', labelsize=8)
 
     plt.figlegend(labels=labels,
                   loc="lower center", handles=handles,
