@@ -74,10 +74,12 @@ def main():
                 for gid in total:
                     total[gid] = 0
                 first = False
+    print("Loaded RefMaps.")
 
     # Now use intervene venn
 
     labels = ivenn.get_labels([list(sets[_]) for _ in sets])
+    print("Labels:", labels)
     funcs = {2: ivenn.venn2,
              3: ivenn.venn3,
              4: ivenn.venn4,
@@ -103,5 +105,7 @@ def main():
                                figsize=(15, 15) if len(options) < 5 else (20, 20))
     fig.savefig("{}.{}".format(args.out, args.format),
                 dpi=args.dpi)
+    import time
+    time.sleep(3)
 
 main()
