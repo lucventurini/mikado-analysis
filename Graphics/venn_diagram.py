@@ -105,6 +105,7 @@ def main():
                                figsize=(15, 15) if len(options) < 5 else (20, 20))
     fig.savefig("{}.{}".format(args.out, args.format),
                 dpi=args.dpi)
+    print("Saved the figure to {}.{}".format(args.out, args.format))
     import time
     time.sleep(3)
 
