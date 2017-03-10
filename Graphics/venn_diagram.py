@@ -88,7 +88,7 @@ def main():
 
     if options["colourmap"]["use"] is True:
         color_normalizer = matplotlib.colors.Normalize(0, len(options["methods"]))
-        color_map = cm.get_cmap(args.colourmap)
+        color_map = cm.get_cmap(options["colourmap"]["name"])
         cols = [color_map(color_normalizer(index))
                 for index in range(len(options["methods"]))]
         # cols = [matplotlib.colors.rgb2hex(color_map(color_normalizer(index)))
