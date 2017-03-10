@@ -1,5 +1,5 @@
 import yaml
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from operator import itemgetter
 import os
 
@@ -9,12 +9,20 @@ def parse_configuration(args, exclude_mikado=False):
     options = yaml.load(args.configuration)
     args.configuration.close()
 
+    if "divisions" not in options:
+        options["divisions"] = defaultdict(dict)
+        options["divisions"]["STAR"]["marker"] = "o"
+        options["divisions"]["TopHat"]["marker"] = "^"
+
+    for division in options["divisions"]:
+        assert "marker" in options["divisions"][division]
+
     for method in options["methods"]:
-        for key in ("STAR", "colour", "index", "TopHat"):
+        for key in ("colour", "index", *options["divisions"].keys()):
             if key not in options["methods"][method]:
                 raise KeyError("{} not found for {}".format(key.capitalize(),
                                                             method))
-        for aligner in ("STAR", "TopHat"):
+        for aligner in options["divisions"]:
             if not isinstance(options["methods"][method][aligner], list):
                 raise TypeError("Invalid type for aligner {}: {}".format(
                     aligner, type(options["methods"][method][aligner])))

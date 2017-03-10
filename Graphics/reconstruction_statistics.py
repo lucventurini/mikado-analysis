@@ -95,11 +95,12 @@ def main():
             # plot.set_ylabel("Recall", fontsize=10)
             stats[key] = dict()
             stats[key][b"plot"] = plot
-            stats[key][b"STAR"] = []
-            stats[key][b"TopHat"] = []
+            for division in options["divisions"]:
+                stats[key][division.encode()] = []
+                stats[key][division.encode()] = []
 
     for method in options["methods"]:
-        for aligner in ("STAR", "TopHat"):
+        for aligner in options["divisions"]:
             orig, filtered = options["methods"][method][aligner]
             orig_lines = [line.rstrip() for line in open(orig)]
             filtered_lines = [line.rstrip() for line in open(filtered)]
@@ -119,35 +120,27 @@ def main():
 
     handles, labels = None, None
 
+    divisions = sorted(options["divisions"].keys())
+
     for stat in stats.keys():
-        star_values = stats[stat][b"STAR"]
-        th_values = stats[stat][b"TopHat"]
+
         plot = stats[stat][b"plot"]
 
-        Xtop = np.array([_[0] for _ in th_values])
-        Ytop = np.array([_[1] for _ in th_values])
-
-        Xstar = np.array([_[0] for _ in star_values])
-        Ystar = np.array([_[1] for _ in star_values])
+        xs = [np.array([_[0] for _ in stats[stat][division.encode()]]) for division in divisions]
+        ys = [np.array([_[1] for _ in stats[stat][division.encode()]]) for division in divisions]
 
         # plot.axis("scaled")
         # Select a suitable maximum
 
         x_minimum = max(0,
-                        floor(min(Xtop.min(), Xstar.min())) - 5)
+                        floor(min(_.min() for _ in xs)) - 5)
         y_minimum = max(0,
-                        floor(min(Ytop.min(), Ystar.min())) - 5)
+                        floor(min(_.min() for _ in ys)) - 5)
 
         x_maximum = min(100,
-                        ceil(max(Xtop.max(), Xstar.max())) + 5)
+                        ceil(max(_.max() for _ in xs)) + 5)
         y_maximum = min(100,
-                        ceil(max(Ytop.max(), Ystar.max())) + 5)
-
-        # x_minimum = max(0, 10 * (floor(min(Xtop.min(), Xstar.min()) / 10.0)))
-        # y_minimum = max(0, 10 * (floor(min(Ytop.min(), Ystar.min()) / 10.0)))
-
-        # x_maximum = min(100, 10 * (ceil(max(Xtop.max(), Xstar.max()) / 10.0)))
-        # y_maximum = min(100, 10 * (ceil(max(Ytop.max(), Ystar.max()) / 10.0)))
+                        ceil(max(_.max() for _ in ys)) + 5)
 
         x_maximum, y_maximum = [max(x_maximum, y_maximum)] * 2
         x_minimum, y_minimum = [min(x_minimum, y_minimum)] * 2
@@ -171,29 +164,20 @@ def main():
             plot.plot((0, i), (i, 0), color='.9', ls='dashed')
             plot.plot((i, 100), (100, i), color='.9', ls='dashed')
 
-        for index, vals in enumerate(zip(Xtop, Ytop, options["methods"].keys())):
-            x, y, label = vals
-            if options["colourmap"]["use"] is False:
-                colour = options["methods"][label]["colour"]
-            else:
-                colour = color_map(color_normalizer(options["methods"][label]["index"]))
-
-            plot.scatter(x, y, label="{0} (TopHat)".format(label), c=colour,
-                         marker="^", edgecolor="k",
-                         s=[50.0], alpha=.8)
-
-        for index, vals in enumerate(zip(Xstar, Ystar, options["methods"].keys())):
-            x, y, label = vals
-            if options["colourmap"]["use"] is False:
-                colour = options["methods"][label]["colour"]
-            else:
-                colour = color_map(color_normalizer(options["methods"][label]["index"]))
-            plot.scatter(x, y, label="{0} (STAR)".format(label), c=colour,
-                         marker="o", edgecolor="k",
-                         s=[50.0], alpha=.8)
+        for enumerated, division in enumerate(divisions):
+            for index, vals in enumerate(zip(xs[enumerated], ys[enumerated], options["methods"].keys())):
+                x, y, label = vals
+                if options["colourmap"]["use"] is False:
+                    colour = options["methods"][label]["colour"]
+                else:
+                    colour = color_map(color_normalizer(options["methods"][label]["index"]))
+                plot.scatter(x, y, label="{0} ({1})".format(label, division),
+                             c=colour, marker=options["divisions"][division]["marker"],
+                             edgecolor="k", s=[50.0], alpha=.8)
 
         if handles is None:
             handles, labels = plot.get_legend_handles_labels()
+
         __axes = plot.axes
         __axes.set_xlim(x_minimum, x_maximum)
         __axes.set_ylim(y_minimum, y_maximum)
