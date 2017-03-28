@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors
 import matplotlib.gridspec as gridspec
+import scipy as sc
 import numpy as np
 import matplotlib.ticker as ticker
 from math import ceil, floor
@@ -14,6 +15,8 @@ from scipy.stats import hmean
 from itertools import zip_longest
 from collections import OrderedDict
 from utils import parse_configuration
+import matplotlib.lines as mlines
+import matplotlib.patches as mpatches
 import os
 
 __doc__ = """Script to automate the plots for the Mikado compare statistics"""
@@ -29,6 +32,23 @@ def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=fillvalue)
 
+
+def rcl(f1s, prc):
+    return (f1s * prc / (2.0 * prc - f1s))
+
+
+def plotf1curves(axis, fstepsize=1, stepsize=0.1):
+    p = np.arange(0.0, 100.0, stepsize)[1:]
+    for f in sc.arange(0.0, 100.0, fstepsize)[1:]:
+        points = [(x, rcl(f, x)) for x in p if 0 < rcl(f, x) <= 100.0]
+        if len(points) > 0:
+            xs, ys = zip(*points)
+            #print("F1 grid")
+            #print(xs, ys)
+            axis.plot(xs, ys, "--", color="gray", linewidth=0.5)  # , label=r"$f=%.1f$"%f) # exclude labels, for legend
+            # bad hack:
+            # gets the 10th last datapoint, from that goes a bit to the left, and a bit down
+            #axis.annotate(r"$f=%.1f$" % f, xy=(xs[-10], ys[-10]), xytext=(xs[-10] - 0.05, ys[-10] - 0.035), size="small", color="gray")
 
 def main():
 
@@ -118,9 +138,9 @@ def main():
                     # Name of the statistic:Base, Exon, etc
                     list(stats.keys())[index]][aligner.encode()].append((precision, recall, f1))
 
-    handles, labels = None, None
-
     divisions = sorted(options["divisions"].keys())
+
+    handles = None
 
     for stat in stats.keys():
 
@@ -142,8 +162,8 @@ def main():
         y_maximum = min(100,
                         ceil(max(_.max() for _ in ys)) + 5)
 
-        x_maximum, y_maximum = [max(x_maximum, y_maximum)] * 2
-        x_minimum, y_minimum = [min(x_minimum, y_minimum)] * 2
+        # x_maximum, y_maximum = [max(x_maximum, y_maximum)] * 2
+        # x_minimum, y_minimum = [min(x_minimum, y_minimum)] * 2
 
         # minimum = max(0, 10 * (floor(
         #         min(Xtop.min(), Xstar.min(), Ystar.min(), Ytop.min()
@@ -160,9 +180,11 @@ def main():
         #     ticker.MultipleLocator(ceil((y_maximum - y_minimum) / 20) * 5))
         # __axes.yaxis.set_minor_locator(ticker.MultipleLocator(ceil((y_maximum - y_minimum)/ 100) * 5))
 
-        for i in range(0, 100, 10):
-            plot.plot((0, i), (i, 0), color='.9', ls='dashed')
-            plot.plot((i, 100), (100, i), color='.9', ls='dashed')
+        # for i in range(0, 100, 10):
+        #     plot.plot((0, i), (i, 0), color='.9', ls='dashed')
+        #     plot.plot((i, 100), (100, i), color='.9', ls='dashed')
+
+        plotf1curves(plot)
 
         for enumerated, division in enumerate(divisions):
             for index, vals in enumerate(zip(xs[enumerated], ys[enumerated], options["methods"].keys())):
@@ -171,21 +193,50 @@ def main():
                     colour = options["methods"][label]["colour"]
                 else:
                     colour = color_map(color_normalizer(options["methods"][label]["index"]))
-                plot.scatter(x, y, label="{0} ({1})".format(label, division),
+                plot.scatter(x, y,
+                             label=label,
+                             # label="{0} ({1})".format(label, division),
                              c=colour, marker=options["divisions"][division]["marker"],
                              edgecolor="k", s=[50.0], alpha=.8)
 
         if handles is None:
             handles, labels = plot.get_legend_handles_labels()
 
+        # labels = list(divisions) + list(options["methods"].keys())
+
         __axes = plot.axes
         __axes.set_xlim(x_minimum, x_maximum)
         __axes.set_ylim(y_minimum, y_maximum)
-        __axes.set_aspect("equal")
+        # __axes.set_aspect("equal")
         plot.tick_params(axis='both', which='major', labelsize=8)
 
-    plt.figlegend(labels=labels,
-                  loc="lower center", handles=handles,
+    # Now create the labels
+    # First the aligners
+
+    # labels = []
+
+    div_labels = []
+
+    for division in options["divisions"]:
+        faux_line = mlines.Line2D([], [], color="white",
+                                  marker=options["divisions"][division]["marker"],
+                                  markersize=14,
+                                  markerfacecolor="black")
+        div_labels.append((faux_line, division))
+
+    for method in options["methods"]:
+        if options["colourmap"]["use"] is False:
+            colour = options["methods"][method]["colour"]
+        else:
+            colour = color_map(color_normalizer(options["methods"][method]["index"]))
+        print(colour)
+
+        patch = mpatches.Patch(color=colour)
+        div_labels.append((patch, method))
+
+    plt.figlegend(handles=[_[0] for _ in div_labels],
+                  labels=[_[1] for _ in div_labels],
+                  loc="lower center",
                   scatterpoints=1,
                   ncol=ceil(len(options["methods"])*2/4), fontsize=10,
                   framealpha=0.5)
