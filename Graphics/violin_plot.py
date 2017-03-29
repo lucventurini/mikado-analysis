@@ -175,7 +175,7 @@ def main():
     parser.add_argument("--title", type=str, default="")
     args = parser.parse_args()
 
-    options = parse_configuration(args)
+    options = parse_configuration(args.configuration)
     # Retrieve FPKM
     star = dict()
     tophat = dict()

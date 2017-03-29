@@ -34,7 +34,7 @@ def main():
     parser.add_argument("--title", default="Venn Diagram")
     args = parser.parse_args()
 
-    options = parse_configuration(args, exclude_mikado=args.exclude)
+    options = parse_configuration(args.configuration, exclude_mikado=args.exclude)
 
     sets = OrderedDict.fromkeys(options["methods"])
 

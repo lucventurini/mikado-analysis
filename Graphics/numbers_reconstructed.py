@@ -28,7 +28,7 @@ def main():
 
     data = OrderedDict()
 
-    options = parse_configuration(args)
+    options = parse_configuration(args.configuration)
 
     for label in options["methods"]:
         for aligner in ("STAR", "TopHat"):

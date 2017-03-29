@@ -27,14 +27,18 @@ def split_comma(string):
 
 
 def grouper(iterable, n, fillvalue=None):
-    "Collect data into fixed-length chunks or blocks"
+    """Collect data into fixed-length chunks or blocks"""
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=fillvalue)
 
 
 def rcl(f1s, prc):
-    return (f1s * prc / (2.0 * prc - f1s))
+    denominator = (2.0 * prc - f1s)
+    if denominator == 0:
+        return 100
+    else:
+        return f1s * prc / denominator
 
 
 def plotf1curves(axis, fstepsize=1, stepsize=0.1):
@@ -59,7 +63,7 @@ def main():
     parser.add_argument("--title", default="Mikado stats")
     args = parser.parse_args()
 
-    options = parse_configuration(args)
+    options = parse_configuration(args.configuration)
     options["out"] = os.path.splitext(args.out)[0]
 
     stats = OrderedDict()
@@ -76,20 +80,20 @@ def main():
     figure.suptitle(" ".join(["${}$".format(_) for _ in args.title.split()]),
                     fontsize=20, style="italic", family="serif")
 
-    Xaxis = matplotlib.patches.FancyArrow(0.1, 0.19, 0.89, 0,
-                                          width=0.001,
-                                          length_includes_head=True,
-                                          transform=figure.transFigure, figure=figure,
-                                          color="k")
-    Yaxis = matplotlib.patches.FancyArrow(0.1, 0.19, 0, 0.7,
-                                          width=0.001,
-                                          length_includes_head=True,
-                                          transform=figure.transFigure, figure=figure,
-                                          color="k")
+    Xaxis = mpatches.FancyArrow(0.1, 0.19, 0.89, 0,
+                                width=0.001,
+                                length_includes_head=True,
+                                transform=figure.transFigure, figure=figure,
+                                color="k")
+    Yaxis = mpatches.FancyArrow(0.1, 0.19, 0, 0.7,
+                                width=0.001,
+                                length_includes_head=True,
+                                transform=figure.transFigure, figure=figure,
+                                color="k")
     figure.lines.extend([Xaxis, Yaxis])
 
-    figure.text(0.92, 0.21, "$Precision$", ha="center", fontsize=15)
-    figure.text(0.07, 0.8, "$Recall$", va="center", fontsize=15, rotation="vertical")
+    figure.text(0.92, 0.21, "$Recall$", ha="center", fontsize=15)
+    figure.text(0.07, 0.8, "$Precision$", va="center", fontsize=15, rotation="vertical")
 
     # name_ar = np.array([["Base", "Exon", "Intron", "Intron chain"],
     #                     ["Transcript (95% nF1)", "Transcript (80% nF1)",
@@ -107,7 +111,7 @@ def main():
         for yrow in (0, 1, 2):
             key = name_ar[xrow, yrow]
             plot = axes[xrow, yrow]
-            plot.grid(True, linestyle='dotted')
+            # plot.grid(True, linestyle='dotted')
             # plot.set(adjustable="box-forced", aspect="equal")
             plot.set_title("{} level".format(key), fontsize=10)
 
@@ -116,7 +120,6 @@ def main():
             stats[key] = dict()
             stats[key][b"plot"] = plot
             for division in options["divisions"]:
-                stats[key][division.encode()] = []
                 stats[key][division.encode()] = []
 
     for method in options["methods"]:
@@ -146,8 +149,8 @@ def main():
 
         plot = stats[stat][b"plot"]
 
-        xs = [np.array([_[0] for _ in stats[stat][division.encode()]]) for division in divisions]
-        ys = [np.array([_[1] for _ in stats[stat][division.encode()]]) for division in divisions]
+        ys = [np.array([_[0] for _ in stats[stat][division.encode()]]) for division in divisions]
+        xs = [np.array([_[1] for _ in stats[stat][division.encode()]]) for division in divisions]
 
         # plot.axis("scaled")
         # Select a suitable maximum
@@ -184,7 +187,7 @@ def main():
         #     plot.plot((0, i), (i, 0), color='.9', ls='dashed')
         #     plot.plot((i, 100), (100, i), color='.9', ls='dashed')
 
-        plotf1curves(plot)
+        plotf1curves(plot, fstepsize=ceil(min(x_maximum - x_minimum, y_maximum - y_minimum)/10))
 
         for enumerated, division in enumerate(divisions):
             for index, vals in enumerate(zip(xs[enumerated], ys[enumerated], options["methods"].keys())):
@@ -217,6 +220,9 @@ def main():
 
     div_labels = []
 
+    f1_line = mlines.Line2D([], [], color="gray", linestyle="--")
+    div_labels.append((f1_line, "F1 contours"))
+
     for division in options["divisions"]:
         faux_line = mlines.Line2D([], [], color="white",
                                   marker=options["divisions"][division]["marker"],
@@ -229,7 +235,6 @@ def main():
             colour = options["methods"][method]["colour"]
         else:
             colour = color_map(color_normalizer(options["methods"][method]["index"]))
-        print(colour)
 
         patch = mpatches.Patch(color=colour)
         div_labels.append((patch, method))

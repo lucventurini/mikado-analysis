@@ -4,10 +4,10 @@ from operator import itemgetter
 import os
 
 
-def parse_configuration(args, exclude_mikado=False):
+def parse_configuration(configuration, exclude_mikado=False, prefix=None):
 
-    options = yaml.load(args.configuration)
-    args.configuration.close()
+    options = yaml.load(configuration)
+    configuration.close()
 
     if "divisions" not in options:
         options["divisions"] = defaultdict(dict)
@@ -29,7 +29,11 @@ def parse_configuration(args, exclude_mikado=False):
             elif len(options["methods"][method][aligner]) != 2:
                 raise ValueError("Invalid number of files specified for {} / {}".format(
                     method, aligner))
-            elif any(not os.path.exists(_) for _ in options["methods"][method][aligner]):
+            if prefix is not None:
+                for index, fname in enumerate(options["methods"][method][aligner]):
+                    options["methods"][method][aligner][index] = os.path.join(prefix, fname)
+
+            if any(not os.path.exists(_) for _ in options["methods"][method][aligner]):
                 raise OSError("Files not found: {}".format(", ".join(
                     options["methods"][method][aligner])))
 

@@ -9,9 +9,11 @@ import argparse
 # import matplotlib.colors
 import re
 from utils import parse_configuration
+# import intervene.modules.upset.list_upset as iupset
 import pandas as pd
 import pyupset as pyu
 import matplotlib.pyplot as plt
+import tempfile
 
 
 def main():
@@ -35,7 +37,7 @@ def main():
     parser.add_argument("--title", default="Venn Diagram")
     args = parser.parse_args()
 
-    options = parse_configuration(args, exclude_mikado=args.exclude)
+    options = parse_configuration(args.configuration, exclude_mikado=args.exclude)
 
     sets = OrderedDict()
 
@@ -79,7 +81,7 @@ def main():
     for aligner in ["STAR", "TopHat"]:
         for method in sorted(options["methods"].keys()):
             set_name = "{} ({})".format(method, aligner)
-            print(set_name)
+            # print(set_name)
             sets[set_name] = pd.DataFrame(list(sets[set_name]), columns=["TID"])
 
     pyu.plot(sets,
