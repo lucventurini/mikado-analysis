@@ -6,10 +6,8 @@ import matplotlib.patches
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors
-import matplotlib.gridspec as gridspec
 import scipy as sc
 import numpy as np
-import matplotlib.ticker as ticker
 from math import ceil, floor
 from scipy.stats import hmean
 from itertools import zip_longest
@@ -19,6 +17,8 @@ import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import os
 import re
+# import matplotlib.gridspec as gridspec
+# import matplotlib.ticker as ticker
 
 __doc__ = """Script to automate the plots for the Mikado compare statistics"""
 
