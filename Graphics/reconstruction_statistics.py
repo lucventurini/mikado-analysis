@@ -18,8 +18,17 @@ from utils import parse_configuration
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import os
+import re
 
 __doc__ = """Script to automate the plots for the Mikado compare statistics"""
+
+
+def calc_f1(rcl, prc):
+
+    if rcl == 0 or prc == 0:
+        return 0
+    else:
+        return 2*(rcl*prc)/(rcl+prc)
 
 
 def split_comma(string):
@@ -40,6 +49,8 @@ def rcl(f1s, prc):
     else:
         return f1s * prc / denominator
 
+def clamp(x):
+    return max(0, min(x, 255))
 
 def plotf1curves(axis, fstepsize=1, stepsize=0.1):
     p = np.arange(0.0, 100.0, stepsize)[1:]
@@ -61,6 +72,11 @@ def main():
     parser.add_argument("-c", "--configuration", required=True, type=argparse.FileType("r"))
     parser.add_argument("--out", required=True)
     parser.add_argument("--title", default="Mikado stats")
+    parser.add_argument("--format", default=None, choices=["png", "pdf", "ps", "eps", "svg"])
+    parser.add_argument("--levels", default=None, choices=["base", "exon", "intron",
+                                                           "intron_chain", "transcript", "gene"],
+                        nargs="+")
+    parser.add_argument("--dpi", type=int, default=None)
     args = parser.parse_args()
 
     options = parse_configuration(args.configuration)
@@ -72,11 +88,46 @@ def main():
 
     # gs = gridspec.GridSpec()
 
+    name_ar = np.array([["Base", "Exon", "Intron"],
+                        ["Intron chain", "Transcript", "Gene"]])
+
+    name_corr = OrderedDict()
+    name_corr["base"] = ("Base", 5)
+    name_corr["exon"] = ("Exon", 7)
+    name_corr["intron"] = ("Intron", 8)
+    name_corr["intron_chain"] = ("Intron chain", 9)
+    name_corr["transcript"] = ("Transcript", 12)
+    name_corr["gene"] = ("Gene", 15)
+
+    if args.levels is None:
+        nrows = 2
+        ncols = 3
+        indices = [name_corr[_][1] for _ in name_corr]
+    else:
+        if len(set(args.levels)) <= 2:
+            nrows = 1
+            ncols = len(set(args.levels))
+        elif len(set(args.levels)) <= 4:
+            nrows = 2
+            ncols = 2
+        else:
+            nrows = 2
+            ncols = 3
+        assert nrows * ncols >= len(set(args.levels))
+        __arr = []
+        indices = []
+        for key in name_corr:
+            if key in args.levels:
+                __arr.append(name_corr[key][0])
+                indices.append(name_corr[key][1])
+        name_ar = np.array(__arr)
+
     figure, axes = plt.subplots(
-        nrows=2,
-        ncols=3,
+        nrows=nrows,
+        ncols=ncols,
         dpi=options["dpi"],
         figsize=(10, 6))
+
     figure.suptitle(" ".join(["${}$".format(_) for _ in args.title.split()]),
                     fontsize=20, style="italic", family="serif")
 
@@ -95,22 +146,21 @@ def main():
     figure.text(0.92, 0.21, "$Recall$", ha="center", fontsize=15)
     figure.text(0.07, 0.8, "$Precision$", va="center", fontsize=15, rotation="vertical")
 
-    # name_ar = np.array([["Base", "Exon", "Intron", "Intron chain"],
-    #                     ["Transcript (95% nF1)", "Transcript (80% nF1)",
-    #                      "Gene (95% nF1)", "Gene (80% nF1)"]])
-
-    name_ar = np.array([["Base", "Exon", "Intron"],
-                        ["Intron chain", "Transcript", "Gene"]])
-
     if options["colourmap"]["use"] is True:
         color_normalizer = matplotlib.colors.Normalize(0, len(options["methods"]))
         color_map = cm.get_cmap(options["colourmap"]["name"])
     # mapper = cm.ScalarMappable(colors, "PuOr")
 
-    for xrow in (0, 1):
-        for yrow in (0, 1, 2):
-            key = name_ar[xrow, yrow]
-            plot = axes[xrow, yrow]
+    for xrow in range(nrows):
+        for yrow in range(ncols):
+            if nrows > 1:
+                key = name_ar[xrow, yrow]
+                plot = axes[xrow, yrow]
+            else:
+                key = name_ar[yrow]
+                plot = axes[yrow]
+            if key is None:
+                continue
             # plot.grid(True, linestyle='dotted')
             # plot.set(adjustable="box-forced", aspect="equal")
             plot.set_title("{} level".format(key), fontsize=10)
@@ -128,7 +178,7 @@ def main():
             orig_lines = [line.rstrip() for line in open(orig)]
             filtered_lines = [line.rstrip() for line in open(filtered)]
             # for index, line_index in enumerate([5, 7, 8, 9, 11, 12, 14, 15]):
-            for index, line_index in enumerate([5, 7, 8, 9, 12, 15]):
+            for index, line_index in enumerate(indices):
                 precision = float(orig_lines[line_index].split(":")[1].split()[1])
                 recall = float(filtered_lines[line_index].split(":")[1].split()[0])
                 try:
@@ -144,6 +194,7 @@ def main():
     divisions = sorted(options["divisions"].keys())
 
     handles = None
+    best_marker = "x"
 
     for stat in stats.keys():
 
@@ -165,35 +216,27 @@ def main():
         y_maximum = min(100,
                         ceil(max(_.max() for _ in ys)) + 5)
 
-        # x_maximum, y_maximum = [max(x_maximum, y_maximum)] * 2
-        # x_minimum, y_minimum = [min(x_minimum, y_minimum)] * 2
-
-        # minimum = max(0, 10 * (floor(
-        #         min(Xtop.min(), Xstar.min(), Ystar.min(), Ytop.min()
-        #         ) / 10.0) - 0.5))
-        # maximum = min(100, 10 *(ceil(
-        #     max(Xtop.max(), Xstar.max(), Ystar.max(), Ytop.max()) / 10.0) + 0.5))
-        # maximum = 100
-
-        # __axes.xaxis.set_major_locator(ticker.MultipleLocator(
-        #     ceil((x_maximum -x_minimum)/ 20) * 5))
-        # __axes.xaxis.set_minor_locator(
-        #     ticker.MultipleLocator(ceil((x_maximum -x_minimum) / 100) * 5))
-        # __axes.yaxis.set_major_locator(
-        #     ticker.MultipleLocator(ceil((y_maximum - y_minimum) / 20) * 5))
-        # __axes.yaxis.set_minor_locator(ticker.MultipleLocator(ceil((y_maximum - y_minimum)/ 100) * 5))
-
-        # for i in range(0, 100, 10):
-        #     plot.plot((0, i), (i, 0), color='.9', ls='dashed')
-        #     plot.plot((i, 100), (100, i), color='.9', ls='dashed')
-
         plotf1curves(plot, fstepsize=ceil(min(x_maximum - x_minimum, y_maximum - y_minimum)/10))
+        best_f1 = (-1, [])
 
         for enumerated, division in enumerate(divisions):
             for index, vals in enumerate(zip(xs[enumerated], ys[enumerated], options["methods"].keys())):
                 x, y, label = vals
+                f1 = calc_f1(x, y)
+                if best_f1[0] < f1:
+                    best_f1 = (f1, [(x, y)])
+                elif best_f1[0] == f1:
+                    best_f1[1].append((x, y))
+
                 if options["colourmap"]["use"] is False:
                     colour = options["methods"][label]["colour"]
+                    matched = re.match("\(([0-9]*), ([0-9]*), ([0-9]*)\)$", colour)
+                    if matched:
+                        colour = "#{0:02x}{1:02x}{2:02x}".format(clamp(int(matched.groups()[0])),
+                                                                 clamp(int(matched.groups()[1])),
+                                                                 clamp(int(matched.groups()[2])))
+                elif options["methods"][label]["colour"] in ("black", "k"):
+                    colour = "black"
                 else:
                     colour = color_map(color_normalizer(options["methods"][label]["index"]))
                 plot.scatter(x, y,
@@ -201,6 +244,10 @@ def main():
                              # label="{0} ({1})".format(label, division),
                              c=colour, marker=options["divisions"][division]["marker"],
                              edgecolor="k", s=[50.0], alpha=.8)
+        for best in best_f1[1]:
+            plot.scatter(best[0], best[1],
+                         label="Best F1",
+                         marker=best_marker, s=[20], c="k")
 
         if handles is None:
             handles, labels = plot.get_legend_handles_labels()
@@ -230,13 +277,25 @@ def main():
                                   markerfacecolor="black")
         div_labels.append((faux_line, division))
 
+    best_marker_line = mlines.Line2D([], [], color="white",
+                                marker=best_marker, markersize=6,
+                                markerfacecolor="black", markeredgecolor="black")
+    div_labels.append((best_marker_line, "Best F1"))
+
     for method in options["methods"]:
         if options["colourmap"]["use"] is False:
             colour = options["methods"][method]["colour"]
+            matched = re.match("\(([0-9]*), ([0-9]*), ([0-9]*)\)$", colour)
+            if matched:
+                colour = "#{0:02x}{1:02x}{2:02x}".format(clamp(int(matched.groups()[0])),
+                                                         clamp(int(matched.groups()[1])),
+                                                         clamp(int(matched.groups()[2])))
+        elif options["methods"][label]["colour"] in ("black", "k"):
+            colour = "black"
         else:
             colour = color_map(color_normalizer(options["methods"][method]["index"]))
 
-        patch = mpatches.Patch(color=colour)
+        patch = mpatches.Patch(facecolor=colour, linewidth=1, edgecolor="k")
         div_labels.append((patch, method))
 
     plt.figlegend(handles=[_[0] for _ in div_labels],
@@ -257,6 +316,11 @@ def main():
         plt.ion()
         plt.show(block=True)
     else:
+        if args.format is not None:
+            options["format"] = args.format
+        if args.dpi is not None:
+            options["dpi"] = args.dpi
+
         plt.savefig("{}.{}".format(options["out"], options["format"]),
                     format=options["format"],
                     dpi=options["dpi"],

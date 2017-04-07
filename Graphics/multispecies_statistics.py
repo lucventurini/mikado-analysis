@@ -18,6 +18,8 @@ from utils import parse_configuration
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import yaml
+import re
+from operator import itemgetter
 import os
 
 __doc__ = """Script to automate the plots for the Mikado compare statistics"""
@@ -32,6 +34,14 @@ def grouper(iterable, n, fillvalue=None):
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=fillvalue)
+
+
+def calc_f1(rcl, prc):
+
+    if rcl == 0 or prc == 0:
+        return 0
+    else:
+        return 2*(rcl*prc)/(rcl+prc)
 
 
 def rcl(f1s, prc):
@@ -55,6 +65,10 @@ def plotf1curves(axis, fstepsize=1, stepsize=0.1):
             # gets the 10th last datapoint, from that goes a bit to the left, and a bit down
             #axis.annotate(r"$f=%.1f$" % f, xy=(xs[-10], ys[-10]), xytext=(xs[-10] - 0.05, ys[-10] - 0.035), size="small", color="gray")
 
+
+def clamp(x):
+    return max(0, min(x, 255))
+
 def main():
 
     parser = argparse.ArgumentParser(__doc__,
@@ -70,6 +84,13 @@ def main():
     parser.add_argument("--format", default="svg", choices=["png", "pdf", "ps", "eps", "svg"])
     parser.add_argument("--level", default="transcript",
                         choices=["base", "exon", "intron", "intron_chain", "transcript", "gene"])
+    parser.add_argument("-cm", "--colour-map", dest="colour_map",
+                        default=None,
+                        help="Colour map to use. Default: use user-specified colours.")
+    parser.add_argument("-cs", "--colour-map-size", dest="colour_map_size",
+                        default=0,
+                        type=int,
+                        help="Colour map to use. Default: use user-specified colours.")
     parser.add_argument("--title", default="Mikado stats for transcript level")
     args = parser.parse_args()
 
@@ -113,6 +134,8 @@ def main():
     markers = dict()
     methods = dict()
 
+    best_marker = "x"
+
     for xrow in (0, 1):
         for yrow in range(ncols):
             try:
@@ -133,12 +156,19 @@ def main():
 
             with open(species[key]["configuration"]) as configuration:
                 options = parse_configuration(configuration, prefix=species[key]["folder"])
+                if args.colour_map is not None:
+                    options["colourmap"]["use"] = True
+                    options["colourmap"]["name"] = args.colour_map
+                else:
+                    options["colourmap"]["use"] = False
 
                 for division in options["divisions"]:
                     markers[division] = options["divisions"][division]["marker"]
 
                 if options["colourmap"]["use"] is True:
-                    color_normalizer = matplotlib.colors.Normalize(0, len(options["methods"]))
+                    cm_length = max(args.colour_map_size, len(options["methods"]))
+                    print(cm_length)
+                    color_normalizer = matplotlib.colors.Normalize(vmin=0, vmax=cm_length)
                     color_map = cm.get_cmap(options["colourmap"]["name"])
 
                 for division in options["divisions"]:
@@ -174,15 +204,31 @@ def main():
                 y_maximum = min(100,
                                 ceil(max(_.max() for _ in ys)) + 5)
                 plotf1curves(plot, fstepsize=ceil(min(x_maximum - x_minimum, y_maximum - y_minimum) / 10))
+                best_f1 = (-1, [])
+
                 for enumerated, division in enumerate(divisions):
                     for index, vals in enumerate(zip(xs[enumerated], ys[enumerated], options["methods"].keys())):
                         x, y, label = vals
+
+                        f1 = calc_f1(x, y)
+                        if best_f1[0] < f1:
+                            best_f1 = (f1, [(x, y)])
+                        elif best_f1[0] == f1:
+                            best_f1[1].append((x, y))
+
                         if label in ("Mikado permissive", "Mikado stringent"):
                             method_name = "Mikado"
                         else:
                             method_name = label
                         if options["colourmap"]["use"] is False:
                             colour = options["methods"][label]["colour"]
+                            matched = re.match("\(([0-9]*), ([0-9]*), ([0-9]*)\)$", colour)
+                            if matched:
+                                colour = "#{0:02x}{1:02x}{2:02x}".format(clamp(int(matched.groups()[0])),
+                                                                         clamp(int(matched.groups()[1])),
+                                                                         clamp(int(matched.groups()[2])))
+                        elif options["methods"][label]["colour"] in ("black", "k"):
+                            colour = "black"
                         else:
                             colour = color_map(color_normalizer(options["methods"][label]["index"]))
                         methods[method_name] = colour
@@ -190,12 +236,17 @@ def main():
                                      label=label,
                                      # label="{0} ({1})".format(label, division),
                                      c=colour, marker=options["divisions"][division]["marker"],
-                                     edgecolor="k", s=[50.0], alpha=.8)
+                                     edgecolor="k", s=[50.0], alpha=1)
                 __axes = plot.axes
                 __axes.set_xlim(x_minimum, x_maximum)
                 __axes.set_ylim(y_minimum, y_maximum)
                 # __axes.set_aspect("equal")
                 plot.tick_params(axis='both', which='major', labelsize=8)
+                # Annotate the best F1
+                for best in best_f1[1]:
+                    plot.scatter(best[0], best[1],
+                                 label="Best F1",
+                                 marker=best_marker, s=[20], c="k")
 
     div_labels = []
 
@@ -209,9 +260,14 @@ def main():
                                   markerfacecolor="black")
         div_labels.append((faux_line, division))
 
+    best_marker_line = mlines.Line2D([], [], color="white",
+                                marker=best_marker, markersize=6,
+                                markerfacecolor="black", markeredgecolor="black")
+    div_labels.append((best_marker_line, "Best F1"))
+
     for method in methods:
         colour = methods[method]
-        patch = mpatches.Patch(color=colour)
+        patch = mpatches.Patch(facecolor=colour, linewidth=1, edgecolor="k")
         div_labels.append((patch, method))
 
     plt.figlegend(handles=[_[0] for _ in div_labels],
