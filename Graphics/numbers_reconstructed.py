@@ -43,7 +43,7 @@ def main():
         color_map = cm.get_cmap(options["colourmap"]["name"])
 
     for label in options["methods"]:
-        for aligner in ("STAR", "TopHat"):
+        for aligner in options["divisions"]:
             data[(label, aligner)] = [set(), set(), set()]
             orig_refmap = "{}.refmap".format(
                 re.sub(".stats$", "", options["methods"][label][aligner][0]))
@@ -65,6 +65,8 @@ def main():
                 data[(label, aligner)][num] = len(data[(label, aligner)][num])
 
     # print(*data.items(), sep="\n")
+
+    divisions = sorted(options["divisions"].keys())
 
     figure, axes = plt.subplots(nrows=3,
                                 ncols=1,
@@ -97,13 +99,10 @@ def main():
     # plot.plot((1, max(max(data[_]) + 1000 for _ in data)), (2, 2), 'k-')
     # plot.plot((1, max(max(data[_]) + 1000 for _ in data)), (3, 3), 'k-')
 
-    shape = ["o", "^"]
-
     handles = []
     labels = []
     for index, tup in enumerate(data.keys()):
-
-        method, aligner = tup
+        method, division = tup
         if options["colourmap"]["use"] is False:
             colour = options["methods"][method]["colour"]
             matched = re.match("\(([0-9]*), ([0-9]*), ([0-9]*)\)$", colour)
@@ -114,11 +113,11 @@ def main():
         elif options["methods"][method]["colour"] in ("black", "k"):
             colour = "black"
         else:
-            colour = color_map(color_normalizer(options["methods"][label]["index"]))
+            colour = color_map(color_normalizer(options["methods"][division]["index"]))
 
         # color = colors[int(index / 2)]
-        marker = shape[index % 2]
-        cat = "{} ({})".format(method, aligner)
+        marker = options["divisions"][division]["marker"]
+        cat = "{} ({})".format(method, division)
         labels.append(cat)
         # handles.append(handle)
         for pos, point in enumerate(data[tup]):
