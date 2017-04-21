@@ -20,10 +20,12 @@ def parse_configuration(configuration, exclude_mikado=False, prefix=None):
     for method in options["methods"]:
         for key in ("colour", "index", *options["divisions"].keys()):
             if key not in options["methods"][method]:
-                raise KeyError("{} not found for {}".format(key.capitalize(),
-                                                            method))
+                print("WARNING: {} not found for {}".format(key.capitalize(), method))
+                options["methods"][method][key] = None
         for aligner in options["divisions"]:
-            if not isinstance(options["methods"][method][aligner], list):
+            if options["methods"][method][aligner] is None:
+                continue
+            elif not isinstance(options["methods"][method][aligner], list):
                 raise TypeError("Invalid type for aligner {}: {}".format(
                     aligner, type(options["methods"][method][aligner])))
             elif len(options["methods"][method][aligner]) != 2:
@@ -40,7 +42,7 @@ def parse_configuration(configuration, exclude_mikado=False, prefix=None):
     new_methods = OrderedDict()
 
     for index, method in sorted([(options["methods"][method]["index"], method)
-                          for method in options["methods"]], key=itemgetter(0)):
+                                 for method in options["methods"]], key=itemgetter(0)):
         if exclude_mikado is True and "mikado" in method.lower():
             continue
         new_methods[method] = options["methods"][method]

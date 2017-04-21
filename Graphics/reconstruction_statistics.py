@@ -45,12 +45,14 @@ def grouper(iterable, n, fillvalue=None):
 def rcl(f1s, prc):
     denominator = (2.0 * prc - f1s)
     if denominator == 0:
-        return 100
+        return 110
     else:
         return f1s * prc / denominator
 
+
 def clamp(x):
     return max(0, min(x, 255))
+
 
 def plotf1curves(axis, fstepsize=1, stepsize=0.1):
     p = np.arange(0.0, 100.0, stepsize)[1:]
@@ -90,6 +92,7 @@ def main():
 
     name_ar = np.array([["Base", "Exon", "Intron"],
                         ["Intron chain", "Transcript", "Gene"]])
+    name_ar_orig = name_ar.copy()
 
     name_corr = OrderedDict()
     name_corr["base"] = ("Base", 5)
@@ -107,7 +110,10 @@ def main():
         if len(set(args.levels)) <= 2:
             nrows = 1
             ncols = len(set(args.levels))
-        elif len(set(args.levels)) <= 4:
+        elif len(set(args.levels)) == 3:
+            ncols = 3
+            nrows = 1
+        elif len(set(args.levels)) == 4:
             nrows = 2
             ncols = 2
         else:
@@ -174,22 +180,37 @@ def main():
 
     for method in options["methods"]:
         for aligner in options["divisions"]:
-            orig, filtered = options["methods"][method][aligner]
-            orig_lines = [line.rstrip() for line in open(orig)]
-            filtered_lines = [line.rstrip() for line in open(filtered)]
+            if options["methods"][method][aligner] is not None:
+                orig, filtered = options["methods"][method][aligner]
+                orig_lines = [line.rstrip() for line in open(orig)]
+                filtered_lines = [line.rstrip() for line in open(filtered)]
+            else:
+                orig_lines = None
+                filtered_lines = None
+                print("Aligner {} not found for method {}".format(aligner, method))
             # for index, line_index in enumerate([5, 7, 8, 9, 11, 12, 14, 15]):
             for index, line_index in enumerate(indices):
-                precision = float(orig_lines[line_index].split(":")[1].split()[1])
-                recall = float(filtered_lines[line_index].split(":")[1].split()[0])
-                try:
-                    f1 = hmean(np.array([precision, recall]))
-                except TypeError as exc:
-                    raise TypeError("\n".join([str(_) for _ in [(precision, type(precision)),
-                                                                (recall, type(recall)),
-                                                                exc]]))
-                stats[
-                    # Name of the statistic:Base, Exon, etc
-                    list(stats.keys())[index]][aligner.encode()].append((precision, recall, f1))
+                if orig_lines is not None:
+                    precision = float(orig_lines[line_index].split(":")[1].split()[1])
+                    recall = float(filtered_lines[line_index].split(":")[1].split()[0])
+                    try:
+                        f1 = hmean(np.array([precision, recall]))
+                    except TypeError as exc:
+                        raise TypeError("\n".join([str(_) for _ in [(precision, type(precision)),
+                                                                    (recall, type(recall)),
+                                                                    exc]]))
+                else:
+                    precision = -10
+                    recall = -10
+                    f1 = -10
+
+                # In order:
+                # Name of the statistic:Base, Exon, etc
+                # Name of the method
+
+                stats[list(stats.keys())[index]][aligner.encode()].append((precision, recall, f1))
+
+
 
     divisions = sorted(options["divisions"].keys())
 
@@ -200,16 +221,26 @@ def main():
 
         plot = stats[stat][b"plot"]
 
+
+
         ys = [np.array([_[0] for _ in stats[stat][division.encode()]]) for division in divisions]
         xs = [np.array([_[1] for _ in stats[stat][division.encode()]]) for division in divisions]
 
+        print("Xs", xs)
+        print("Ys", ys)
+
         # plot.axis("scaled")
         # Select a suitable maximum
+        index = np.argwhere(name_ar_orig == stat)
+        index = index[0][0] * 3 + index[0][1]
+        print("Index", index, stat, name_ar)
+        suitable_x = np.array([_[index] for _ in xs if _[index] != -10])
+        suitable_y = np.array([_[index] for _ in ys if _[index] != -10])
 
-        x_minimum = max(0,
-                        floor(min(_.min() for _ in xs)) - 5)
-        y_minimum = max(0,
-                        floor(min(_.min() for _ in ys)) - 5)
+        print(suitable_x.min(), index, suitable_x)
+
+        x_minimum = max(0, floor(suitable_x.min()) - 5)
+        y_minimum = max(0, floor(suitable_y.min()) - 5)
 
         x_maximum = min(100,
                         ceil(max(_.max() for _ in xs)) + 5)
@@ -255,6 +286,7 @@ def main():
         # labels = list(divisions) + list(options["methods"].keys())
 
         __axes = plot.axes
+        print(stat, "({}, {})".format(x_minimum, x_maximum), "({}, {})".format(y_minimum, y_maximum))
         __axes.set_xlim(x_minimum, x_maximum)
         __axes.set_ylim(y_minimum, y_maximum)
         # __axes.set_aspect("equal")
@@ -302,7 +334,7 @@ def main():
                   labels=[_[1] for _ in div_labels],
                   loc="lower center",
                   scatterpoints=1,
-                  ncol=ceil(len(options["methods"])*2/4), fontsize=10,
+                  ncol=ceil((2+len(options["methods"])*len(options["divisions"]))/4), fontsize=10,
                   framealpha=0.5)
     # Necessary to pad the superior title
     plt.tight_layout(pad=0.5,
