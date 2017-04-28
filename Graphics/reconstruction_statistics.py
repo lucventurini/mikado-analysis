@@ -221,8 +221,6 @@ def main():
 
         plot = stats[stat][b"plot"]
 
-
-
         ys = [np.array([_[0] for _ in stats[stat][division.encode()]]) for division in divisions]
         xs = [np.array([_[1] for _ in stats[stat][division.encode()]]) for division in divisions]
 
@@ -234,8 +232,26 @@ def main():
         index = np.argwhere(name_ar_orig == stat)
         index = index[0][0] * 3 + index[0][1]
         print("Index", index, stat, name_ar)
-        suitable_x = np.array([_[index] for _ in xs if _[index] != -10])
-        suitable_y = np.array([_[index] for _ in ys if _[index] != -10])
+
+        # Structure of X:
+        # array[ method1[X assembler1, X assembler2, X assembler3 ...],
+        #        method2[X assembler1, X assembler2, X assembler3 ...],
+        #        ... ]
+
+        suitable_x = []
+        for method_num in range(len(xs)):
+            for assembler_val in xs[method_num]:
+                if assembler_val > -10:
+                    suitable_x.append(assembler_val)
+
+        suitable_y = []
+        for method_num in range(len(ys)):
+            for assembler_val in ys[method_num]:
+                if assembler_val > -10:
+                    suitable_y.append(assembler_val)
+
+        suitable_x = np.array(suitable_x)
+        suitable_y = np.array(suitable_y)
 
         print(suitable_x.min(), index, suitable_x)
 
