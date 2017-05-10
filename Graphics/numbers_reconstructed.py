@@ -44,25 +44,28 @@ def main():
 
     for label in options["methods"]:
         for aligner in options["divisions"]:
-            data[(label, aligner)] = [set(), set(), set()]
-            orig_refmap = "{}.refmap".format(
-                re.sub(".stats$", "", options["methods"][label][aligner][0]))
-            with open(orig_refmap) as refmap:
-                for row in csv.DictReader(refmap, delimiter="\t"):
-                    if row["best_ccode"] in ("=", "_"):
-                        data[(label, aligner)][0].add(row["ref_gene"])
-                    elif row["best_ccode"][0] == "f":
-                        data[(label, aligner)][2].add(row["ref_gene"])
-                    # elif row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
-                    #     data[(label, aligner)][1].add(row["ref_gene"])
-            filtered_refmap = "{}.refmap".format(
-                re.sub(".stats$", "", options["methods"][label][aligner][1]))
-            with open(filtered_refmap) as refmap:
-                for row in csv.DictReader(refmap, delimiter="\t"):
-                    if row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
-                        data[(label, aligner)][1].add(row["ref_gene"])
-            for num in range(3):
-                data[(label, aligner)][num] = len(data[(label, aligner)][num])
+            if options["methods"][label][aligner] is not None:
+                data[(label, aligner)] = [set(), set(), set()]
+                orig_refmap = "{}.refmap".format(
+                    re.sub(".stats$", "", options["methods"][label][aligner][0]))
+                with open(orig_refmap) as refmap:
+                    for row in csv.DictReader(refmap, delimiter="\t"):
+                        if row["best_ccode"] in ("=", "_"):
+                            data[(label, aligner)][0].add(row["ref_gene"])
+                        elif row["best_ccode"][0] == "f":
+                            data[(label, aligner)][2].add(row["ref_gene"])
+                        # elif row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
+                        #     data[(label, aligner)][1].add(row["ref_gene"])
+                filtered_refmap = "{}.refmap".format(
+                    re.sub(".stats$", "", options["methods"][label][aligner][1]))
+                with open(filtered_refmap) as refmap:
+                    for row in csv.DictReader(refmap, delimiter="\t"):
+                        if row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
+                            data[(label, aligner)][1].add(row["ref_gene"])
+                for num in range(3):
+                    data[(label, aligner)][num] = len(data[(label, aligner)][num])
+            else:
+                data[(label, aligner)] = [-1000] * 3
 
     # print(*data.items(), sep="\n")
 
@@ -77,7 +80,7 @@ def main():
     for pos, ax in enumerate(axes):
         ax.set_ylim(0, 2)
         max_x = max(data[_][pos] for _ in data) + 500
-        min_x = max(0, min(data[_][pos] for _ in data) - 500)
+        min_x = max(0, min(data[_][pos] for _ in data if data[_][pos] > 0) - 500)
         ax.set_xlim(min_x, max_x)
         ax.plot((1, max_x), (1, 1), 'k-')
         ax.tick_params(axis='both', which='major', labelsize=10)

@@ -224,14 +224,14 @@ def main():
         ys = [np.array([_[0] for _ in stats[stat][division.encode()]]) for division in divisions]
         xs = [np.array([_[1] for _ in stats[stat][division.encode()]]) for division in divisions]
 
-        print("Xs", xs)
-        print("Ys", ys)
+        # print("Xs", xs)
+        # print("Ys", ys)
 
         # plot.axis("scaled")
         # Select a suitable maximum
         index = np.argwhere(name_ar_orig == stat)
         index = index[0][0] * 3 + index[0][1]
-        print("Index", index, stat, name_ar)
+        # print("Index", index, stat, name_ar)
 
         # Structure of X:
         # array[ method1[X assembler1, X assembler2, X assembler3 ...],
@@ -253,7 +253,7 @@ def main():
         suitable_x = np.array(suitable_x)
         suitable_y = np.array(suitable_y)
 
-        print(suitable_x.min(), index, suitable_x)
+        # print(suitable_x.min(), index, suitable_x)
 
         x_minimum = max(0, floor(suitable_x.min()) - 5)
         y_minimum = max(0, floor(suitable_y.min()) - 5)
@@ -302,7 +302,7 @@ def main():
         # labels = list(divisions) + list(options["methods"].keys())
 
         __axes = plot.axes
-        print(stat, "({}, {})".format(x_minimum, x_maximum), "({}, {})".format(y_minimum, y_maximum))
+        # print(stat, "({}, {})".format(x_minimum, x_maximum), "({}, {})".format(y_minimum, y_maximum))
         __axes.set_xlim(x_minimum, x_maximum)
         __axes.set_ylim(y_minimum, y_maximum)
         # __axes.set_aspect("equal")
@@ -346,11 +346,13 @@ def main():
         patch = mpatches.Patch(facecolor=colour, linewidth=1, edgecolor="k")
         div_labels.append((patch, method))
 
+    npatches = len(options["divisions"]) + len(options["methods"]) + 2
     plt.figlegend(handles=[_[0] for _ in div_labels],
                   labels=[_[1] for _ in div_labels],
                   loc="lower center",
                   scatterpoints=1,
-                  ncol=ceil((2+len(options["methods"])*len(options["divisions"]))/4), fontsize=10,
+                  ncol=ceil(npatches/4),
+                  fontsize=10,
                   framealpha=0.5)
     # Necessary to pad the superior title
     plt.tight_layout(pad=0.5,
