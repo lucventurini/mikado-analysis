@@ -111,7 +111,7 @@ def main():
 
     figure.suptitle(" ".join(["${}$".format(_) for _ in args.title.split()]),
                     fontsize=20, style="italic", family="serif")
-    figure.text(0.5, 0.15, "${}\ \%$".format(args.type.title()), ha="center", fontsize=15)
+    figure.text(0.5, 0.15, "${}\ genes\ by\ method,\ in\ other\ methods$".format(args.type.title()), ha="center", fontsize=15)
 
     for yrow, name in enumerate(names):
         plot = axes[yrow]
@@ -208,12 +208,13 @@ def main():
             plot.add_line(line)
             for div_index, div in enumerate(reversed(sorted(options["divisions"])), 1):
                 line_pos = len(options["methods"]) * div_index + 0.5
+                text_pos = len(options["methods"]) * (div_index - 0.5) + 0.5
                 x, y = np.array([[-2000, -0.5], [line_pos, line_pos]])
                 line = lines.Line2D(x, y, lw=1., color='k', alpha=1)
                 line.set_clip_on(False)
                 plot.add_line(line)
                 # ax.plot((-1000, max_val), (line_pos, line_pos), color="lightgrey")
-                figure.text(0.05, div_index * 0.4, div, ha="center", fontsize=15, rotation="vertical")
+                plot.text(-max_val * 0.75, text_pos, div, ha="center", fontsize=15, rotation="vertical")
         else:
             plot.axes.set_yticks([])
 
@@ -235,7 +236,7 @@ def main():
                   loc="lower center",
                   scatterpoints=1,
                   ncol=2,
-                  fontsize=14,
+                  fontsize=20,
                   framealpha=0.5)
 
     plt.tight_layout(pad=0.5,
