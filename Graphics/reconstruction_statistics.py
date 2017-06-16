@@ -164,7 +164,10 @@ def main():
                 plot = axes[xrow, yrow]
             else:
                 key = name_ar[yrow]
-                plot = axes[yrow]
+                if ncols > 1:
+                    plot = axes[yrow]
+                else:
+                    plot = axes
             if key is None:
                 continue
             # plot.grid(True, linestyle='dotted')
@@ -215,7 +218,7 @@ def main():
     divisions = sorted(options["divisions"].keys())
 
     handles = None
-    best_marker = "x"
+    best_marker = "o"
 
     for stat in stats.keys():
 
@@ -291,10 +294,19 @@ def main():
                              # label="{0} ({1})".format(label, division),
                              c=colour, marker=options["divisions"][division]["marker"],
                              edgecolor="k", s=[50.0], alpha=.8)
+
+        circle_rad = 30
         for best in best_f1[1]:
-            plot.scatter(best[0], best[1],
-                         label="Best F1",
-                         marker=best_marker, s=[20], c="k")
+            plot.plot(best[0], best[1], "o",
+                      label="Best F1",
+                      ms=circle_rad,
+                      linestyle="-",
+                      mec="k",
+                      mfc="none")
+        # for best in best_f1[1]:
+        #     plot.scatter(best[0], best[1],
+        #                  label="Best F1",
+        #                  marker=best_marker, s=[20], c="k")
 
         if handles is None:
             handles, labels = plot.get_legend_handles_labels()
@@ -325,9 +337,12 @@ def main():
                                   markerfacecolor="black")
         div_labels.append((faux_line, division))
 
+    # best_marker_line = mlines.Line2D([], [], color="white",
+    #                             marker=best_marker, markersize=6,
+    #                             markerfacecolor="black", markeredgecolor="black")
     best_marker_line = mlines.Line2D([], [], color="white",
-                                marker=best_marker, markersize=6,
-                                markerfacecolor="black", markeredgecolor="black")
+                                marker=best_marker, markersize=15,
+                                markerfacecolor="none", markeredgecolor="black")
     div_labels.append((best_marker_line, "Best F1"))
 
     for method in options["methods"]:

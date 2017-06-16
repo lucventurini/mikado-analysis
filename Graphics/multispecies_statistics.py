@@ -19,8 +19,11 @@ import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import yaml
 import re
+import warnings
+import sys
 from operator import itemgetter
 import os
+
 
 __doc__ = """Script to automate the plots for the Mikado compare statistics"""
 
@@ -82,7 +85,7 @@ def main():
     parser.add_argument("--opaque", default=True, action="store_false")
     parser.add_argument("--dpi", default=1000, type=int)
     parser.add_argument("--format", default="svg", choices=["png", "pdf", "ps", "eps", "svg"])
-    parser.add_argument("--level", default="transcript",
+    parser.add_argument("--level", default=["transcript"], nargs="+",
                         choices=["base", "exon", "intron", "intron_chain", "transcript", "gene"])
     parser.add_argument("-cm", "--colour-map", dest="colour_map",
                         default=None,
@@ -91,37 +94,65 @@ def main():
                         default=0,
                         type=int,
                         help="Colour map to use. Default: use user-specified colours.")
+    parser.add_argument("-s", "--style", choices=plt.style.available, default="ggplot")
     parser.add_argument("--title", default="Mikado stats for transcript level")
     args = parser.parse_args()
 
+    if len(args.level) > 2:
+        warnings.warn("Currently the script can only accept 1 or 2 levels. Exiting.")
+        sys.exit(1)
+
     species = yaml.load(args.species)
 
-    ncols = ceil(len(species) / 2)
+    names = species.pop("names")
+
+    if len(args.level) == 1:
+        ncols = ceil(len(species) / 2)
+    else:
+        ncols = len(species)
 
     figure, axes = plt.subplots(
         nrows=2,
         ncols=ncols,
         dpi=args.dpi,
-        figsize=(10, 6))
+        figsize=(10 / 2 * ncols, 6 / 2 * ncols))
     figure.suptitle(" ".join(["${}$".format(_) for _ in args.title.split()]),
                     fontsize=20, style="italic", family="serif")
 
-    Xaxis = mpatches.FancyArrow(0.1, 0.19, 0.89, 0,
-                                width=0.001,
+    Xaxis = mpatches.FancyArrow(0.07, 0.19, 0.89, 0,
+                                width=0.003,
                                 length_includes_head=True,
                                 transform=figure.transFigure, figure=figure,
                                 color="k")
-    Yaxis = mpatches.FancyArrow(0.1, 0.19, 0, 0.7,
-                                width=0.001,
+    Yaxis = mpatches.FancyArrow(0.07, 0.19, 0, 0.7,
+                                width=0.003,
                                 length_includes_head=True,
                                 transform=figure.transFigure, figure=figure,
                                 color="k")
     figure.lines.extend([Xaxis, Yaxis])
 
     figure.text(0.92, 0.21, "$Recall$", ha="center", fontsize=15)
-    figure.text(0.07, 0.8, "$Precision$", va="center", fontsize=15, rotation="vertical")
+    figure.text(0.03, 0.8, "$Precision$", va="center", fontsize=15, rotation="vertical")
 
-    name_ar = np.array(list(grouper(species.keys(), ceil(len(species)/2), None)))
+    name_ar = []
+    # This is tricky .. this should be divided in 2 if there is more than one level
+
+    if len(args.level) == 1:
+        categories = species.pop("categories")
+        for category in categories:
+            for name in names:
+                key = [_ for _ in species.keys() if species[_]["name"] == name and species[_]["category"] == category]
+                assert len(key) == 1
+                key = key.pop()
+                name_ar.append(key)
+        name_ar = np.array(list(grouper(name_ar, ceil(len(species) / 2), None)))
+    else:
+        categories = args.level
+        for level in args.level:
+            for name in names:
+                assert name in species.keys()
+                name_ar.append(name)
+        name_ar = np.array(list(grouper(name_ar, 2, None)))
 
     # Dictionary to indicate which line should be taken given the level
     line_correspondence = {"base": 5,
@@ -132,22 +163,25 @@ def main():
                            "gene": 15}
 
     markers = dict()
-    methods = dict()
+    methods = OrderedDict()
 
-    best_marker = "x"
+    best_marker = "o"
 
-    for xrow in (0, 1):
-        for yrow in range(ncols):
+    for xrow, category in enumerate(categories):
+        for yrow, name in enumerate(names):
             try:
                 key = name_ar[xrow, yrow]
             except IndexError:
-                raise IndexError(name_ar)
+                raise IndexError(name_ar, xrow, yrow)
             if key is None:
                 continue
             plot = axes[xrow, yrow]
             # plot.grid(True, linestyle='dotted')
             # plot.set(adjustable="box-forced", aspect="equal")
-            plot.set_title("${}$".format(species[key]["name"]), fontsize=10)
+            if xrow == 0:
+                plot.set_title("${}$".format(names[yrow]), fontsize=15)
+            if yrow == 0:
+                plot.set_ylabel(categories[xrow].title(), fontsize=15)
 
             # plot.set_xlabel("Precision", fontsize=10)
             # plot.set_ylabel("Recall", fontsize=10)
@@ -175,12 +209,24 @@ def main():
                     stats[division.encode()] = []
 
                 for method in options["methods"]:
-                    for aligner in options["divisions"]:
-                        orig, filtered = options["methods"][method][aligner]
+                    for division in options["divisions"]:
+                        # print("Method:", method, "Aligner:", division)
+                        try:
+                            orig, filtered = options["methods"][method][division]
+                        except TypeError:
+                            warnings.warn("Something went wrong for {}, {}; continuing".format(
+                                method, division))
+                            stats[division.encode()].append((-10, -10, -10))
+                            continue
                         orig_lines = [line.rstrip() for line in open(orig)]
                         filtered_lines = [line.rstrip() for line in open(filtered)]
                         # for index, line_index in enumerate([5, 7, 8, 9, 11, 12, 14, 15]):
-                        for index, line_index in enumerate([line_correspondence[args.level]]):
+                        if category in args.level:
+                            level = category
+                        else:
+                            level = args.level[0]
+
+                        for index, line_index in enumerate([line_correspondence[level]]):
                             precision = float(orig_lines[line_index].split(":")[1].split()[1])
                             recall = float(filtered_lines[line_index].split(":")[1].split()[0])
                             try:
@@ -189,15 +235,30 @@ def main():
                                 raise TypeError("\n".join([str(_) for _ in [(precision, type(precision)),
                                                                             (recall, type(recall)),
                                                                             exc]]))
-                            stats[aligner.encode()].append((precision, recall, f1))
+                            # print(level, method, division, (precision, recall, f1))
+                            stats[division.encode()].append((precision, recall, f1))
                 divisions = sorted(options["divisions"].keys())
                 handles = None
+
+                # ys = []
+                # xs = []
+                # for division in divisions:
+                #     for level in args.level:
+                #         ys.append(stats[division.encode()][level][0])
+                #         xs.append(stats[division.encode()][level][1])
+                #
+                # ys = np.array(ys)
+                # xs = np.array(xs)
+
                 ys = [np.array([_[0] for _ in stats[division.encode()]]) for division in divisions]
                 xs = [np.array([_[1] for _ in stats[division.encode()]]) for division in divisions]
+
                 x_minimum = max(0,
-                                floor(min(_.min() for _ in xs)) - 5)
+                                floor(min(np.array([x for x in _ if x >= 0]).min() for _ in xs)) - 5)
+                # x_minimum = max(0,
+                #                 floor(min(_.min() for _ in xs)) - 5)
                 y_minimum = max(0,
-                                floor(min(_.min() for _ in ys)) - 5)
+                                floor(min(np.array([y for y in _ if y >= 0]).min() for _ in ys)) - 5)
 
                 x_maximum = min(100,
                                 ceil(max(_.max() for _ in xs)) + 5)
@@ -236,17 +297,34 @@ def main():
                                      label=label,
                                      # label="{0} ({1})".format(label, division),
                                      c=colour, marker=options["divisions"][division]["marker"],
-                                     edgecolor="k", s=[50.0], alpha=1)
+                                     edgecolor="k", s=[100.0], alpha=1)
                 __axes = plot.axes
                 __axes.set_xlim(x_minimum, x_maximum)
                 __axes.set_ylim(y_minimum, y_maximum)
                 # __axes.set_aspect("equal")
                 plot.tick_params(axis='both', which='major', labelsize=8)
                 # Annotate the best F1
+                circle_rad = 20
                 for best in best_f1[1]:
-                    plot.scatter(best[0], best[1],
+                    plot.plot(best[0], best[1], "o",
                                  label="Best F1",
-                                 marker=best_marker, s=[20], c="k")
+                                 ms=circle_rad,
+                                 linestyle="-",
+                                 mec="k",
+                                 mfc="none")
+                                 # marker=best_marker, c="k")
+
+    # Not very efficient way to normalize boundaries for the plots
+    for col in range(len(names)):
+        p1 = axes[0, col]
+        p2 = axes[1, col]
+
+        x_min, x_max = min(p1.get_xlim()[0], p2.get_xlim()[0]), max(p1.get_xlim()[1], p2.get_xlim()[1])
+        y_min, y_max = min(p1.get_ylim()[0], p2.get_ylim()[0]), max(p1.get_ylim()[1], p2.get_ylim()[1])
+        p1.set_xlim(x_min, x_max)
+        p2.set_xlim(x_min, x_max)
+        p1.set_ylim(y_min, y_max)
+        p2.set_ylim(y_min, y_max)
 
     div_labels = []
 
@@ -261,11 +339,12 @@ def main():
         div_labels.append((faux_line, division))
 
     best_marker_line = mlines.Line2D([], [], color="white",
-                                marker=best_marker, markersize=6,
-                                markerfacecolor="black", markeredgecolor="black")
+                                marker=best_marker, markersize=17,
+                                markerfacecolor="none", markeredgecolor="black")
     div_labels.append((best_marker_line, "Best F1"))
 
-    for method in methods:
+    for method in sorted(options["methods"]):
+        print(method)
         colour = methods[method]
         patch = mpatches.Patch(facecolor=colour, linewidth=1, edgecolor="k")
         div_labels.append((patch, method))
@@ -274,8 +353,8 @@ def main():
                   labels=[_[1] for _ in div_labels],
                   loc="lower center",
                   scatterpoints=1,
-                  ncol=ceil((len(methods) + len(markers)) / 4),
-                  fontsize=10,
+                  ncol=ceil((len(methods) + len(markers)) / 4) + 2,
+                  fontsize=13,
                   framealpha=0.5)
 
     plt.tight_layout(pad=0.5,
