@@ -1,15 +1,42 @@
 #!/usr/bin/env python3
 
-import csv
 import argparse
 import sys
 from collections import Counter, defaultdict
+import pandas
 
 __doc__ = """This quick script will output, given a set of refmaps, how many transcripts
-have been correctly reconstrcted by all of them, all minus one, all minus two, etc."""
+have been correctly reconstructed by all of them, all minus one, all minus two, etc."""
 
 
-def analyse_refmap(input_file, values):
+codes = {'=': 6,
+         'C': 5,
+         'G': 4,
+         'I': 2,
+         'J': 4,
+         'NA': 1,
+         'O': 4,
+         'P': 1,
+         'X': 2,
+         '_': 6,
+         'c': 5,
+         'e': 2,
+         'f': 3,
+         'g': 4,
+         'h': 4,
+         'i': 2,
+         'j': 4,
+         'm': 6,
+         'mo': 4,
+         'n': 4,
+         'o': 4,
+         'p': 1,
+         'rI': 2,
+         'ri': 2,
+         'x': 2}
+
+
+def analyse_refmap(input_file, values, feature="transcript"):
     """
     Quick snippet to retrieve the ccodes from the RefMap
     :param input_file:
@@ -18,48 +45,31 @@ def analyse_refmap(input_file, values):
     :return:
     """
 
-    with open(input_file) as refmap:
-        # ids_not_found = set()
-        for row in csv.DictReader(refmap, delimiter="\t"):
-            # "1.No Overlap",
-            # "2. Fragment or intronic",
-            # "3. Fusion",
-            # "4. Alternative splicing",
-            # "5. Extension (n, J)",
-            # "6. Contained (c, C)",
-            # "7. Match (=,_)"
+    if feature == "transcript":
+        ccode_key = "ccode"
+        unique = False
+        key = "ref_id"
+    else:
+        ccode_key = "best_ccode"
+        unique = True
+        key = "ref_gene"
 
-            ccode = row["ccode"]
-            if ccode in ("NA", "p", "P"):
-                ccode = 1
-            elif ccode in ("X", "x", "e", "I", "i", "ri", "rI"):
-                ccode = 2
-            elif ccode[0] == "f" and ccode.split(",")[1] not in ("=", "_"):
-                ccode = 3
-            elif ccode in ("G", "O", "g", "mo", "o", "h", "j"):
-                ccode = 4
-            elif ccode in ("n", "J"):
-                ccode = 4
-            elif ccode in ("c", "C"):
-                ccode = 5
-            else:
-                assert (ccode in ("=", "_", "m") or (
-                    ccode.split(",")[0] == "f" and ccode.split(",")[1] in ("=", "_"))), ccode
-                ccode = 6
+    df = pandas.read_csv(input_file, delimiter="\t")
+    cols = df[[key, ccode_key]]
+    if unique is True:
+        cols = cols.drop_duplicates()
 
-            if row["ref_id"] not in values:
-                values[row["ref_id"]] = defaultdict(int)
+    cols.fillna("NA")
+    cols[ccode_key].replace("f,=", "=", inplace=True, regex=True)
+    cols[ccode_key].replace("f,_", "_", inplace=True, regex=True)
+    cols[ccode_key].replace("f,.*", "f", inplace=True, regex=True)
+    cols[ccode_key] = cols[ccode_key].map(codes)
 
-            # if row["ref_id"] not in values:
-            #     ids_not_found.add(row["ref_id"])
-            #     continue
-            values[row["ref_id"]][ccode] += 1
-
-        # if len(ids_not_found) > 0:
-        #     print("# of ids not found for {0}: {1}".format(
-        #         input_file, len(ids_not_found)),
-        #           file=sys.stderr
-        #     )
+    for row in cols.itertuples():
+        _, rid, val = row
+        if rid not in values:
+            values[rid] = defaultdict(int)
+        values[rid][val] += 1
 
     return values
 
@@ -71,17 +81,18 @@ def main():
             "fragment": 2,
             "fusion": 3,
             "as": 4,
-            "extension": 5}
+            "contained": 5}
 
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("-o", "--out", default=sys.stdout, type=argparse.FileType("wt"))
     parser.add_argument("-t", "--type", default="full",
                         choices=keys.keys())
+    parser.add_argument("-f", "--feature", choices=["transcript", "gene"], default="gene")
     parser.add_argument("refmap", nargs="+")
     args = parser.parse_args()
 
     vals = dict()
-    [analyse_refmap(refmap, vals) for refmap in args.refmap]
+    [analyse_refmap(refmap, vals, feature=args.feature) for refmap in args.refmap]
 
     counter = Counter(vals.keys())
     key = keys[args.type]
@@ -89,7 +100,7 @@ def main():
         counter.update([vals[ref_id][key]])
 
     for num in reversed(range(0, len(args.refmap) + 1)):
-        print(num, counter[num], sep="\t", file=args.out)
+        print(num, counter[num], round(100 * counter[num] / len(vals), 2), sep="\t", file=args.out)
 
 main()
 

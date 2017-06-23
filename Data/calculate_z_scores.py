@@ -1,9 +1,13 @@
+#!/usr/bin/env python3
+
 import os
-from collections import OrderedDict
-from scipy.stats import hmean, zscore
+import operator
+from collections import OrderedDict, defaultdict
+from scipy.stats import hmean
 from utils import parse_configuration
 import argparse
 import numpy as np
+import scipy.stats as mstats
 import sys
 
 
@@ -37,13 +41,15 @@ def main():
     name_corr["gene"] = ("Gene", 15)
     indices = [name_corr[_][1] for _ in name_corr]
 
+    stats = dict()
+
     for key in name_corr:
-        stats[key] = []
+        stats[key] = OrderedDict()
 
     key_map = []
 
-    for method in options["methods"]:
-        for aligner in options["divisions"]:
+    for method in sorted(options["methods"].keys()):
+        for aligner in sorted(options["divisions"].keys()):
             key_map.append((method, aligner))
             if options["methods"][method][aligner] is not None:
                 orig, filtered = options["methods"][method][aligner]
@@ -69,31 +75,46 @@ def main():
                     recall = -10
                     f1 = -10
 
-                # In order:
-                # Name of the statistic:Base, Exon, etc
-                # Name of the method
+                stats[list(stats.keys())[index]][(method, aligner)] = (precision, recall, f1)
 
-                stats[list(stats.keys())[index]].append((precision, recall, f1))
+    zscores = {"precision": defaultdict(OrderedDict),
+               "recall": defaultdict(OrderedDict),
+               "f1": defaultdict(OrderedDict)}
 
-    zscores = OrderedDict()
     for stat in stats:
-        stats[stat] = np.array(stats[stat])
-        zscores[stat] = np.array([zscore(stats[stat][:, 0]), zscore(stats[stat][:, 1]), zscore(stats[stat][:, 2])])
+        for index, feat in enumerate(["precision", "recall", "f1"]):
+            vals = np.array([_[index] for _ in stats[stat].values()])
+            for key, score in zip(stats[stat].keys(), mstats.zscore(vals)):
+                zscores[feat][key][stat] = score
+
+    # Now we have calculated the Zscore for each of the methods for each of the stats
+    # Time to sum them up
+
+    zscore_sum = defaultdict(OrderedDict)
+    ranks = defaultdict(OrderedDict)
+    for feat in ["precision", "recall", "f1"]:
+        for key in zscores[feat]:
+            zscore_sum[feat][key] = sum(zscores[feat][key].values())
+        feat_ranks = sorted(zscore_sum[feat].items(), key=operator.itemgetter(1), reverse=True)
+        feat_ranks = list(enumerate(feat_ranks, 1))
+        d = dict()
+        for rank, (key, zsum) in feat_ranks:
+            d[key] = (zsum, rank)
+        for key in stats["base"].keys():
+            ranks[feat][key] = d[key][:]
 
     if options["out"] is not None:
         out = open(options["out"], "wt")
     else:
         out = sys.stdout
 
-    stat_index = ["Precision", "Recall", "F1"].index(args.type)
-
-    print("Method", *stats.keys(), sep="\t", file=out)
-    for index, key in enumerate(key_map):
-        line = []
-        line.append("{} ({})".format(*key))
-        for stat in zscores:
-            line.append(zscores[stat][stat_index][index])
-        print(*line, sep="\t")
+    print("Method", "Precision", "", "Recall", "", "F1", sep="\t", file=out)
+    print("", *["zscore", "rank"] * 3, sep="\t", file=out)
+    for key in ranks["precision"].keys():
+        row = ["{} ({})".format(*key)]
+        for feat in ["precision", "recall", "f1"]:
+            row.extend(ranks[feat][key])
+        print(*row, sep="\t", file=out)
 
     if options["out"] is not None:
         out.close()

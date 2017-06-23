@@ -42,7 +42,7 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
 
     colors = {1: "white", 2: "white"}
 
-    for num in range(3, 7*2 + 1):
+    for num in range(3, 8 * 2 + 1):
         colors[num] = color_map(color_normalizer(num))
 
     # plot = plt.plot()
@@ -101,6 +101,14 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
             for tick in axes[row,col].get_xticklabels():
                 tick.set_rotation(60)
             values_array = []
+
+            __vals = fraction[[_ for n, _ in enumerate(fraction.columns) if n > 1]]
+
+            __vals.dropna(inplace=True)
+            __vals = __vals[__vals.apply(lambda x: min(x) == 6, 1)]
+            found_in_all = len(__vals)
+            print(found_in_all)
+
             for method in methods:
                 if aligner not in method:
                     continue
@@ -112,8 +120,12 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
                 ]))
 
                 curr_array = [round(len(fraction[fraction[method] == num]) *100 / len(fraction), 2)
-                              for num in range(1, 7)]
+                              for num in range(1, 6)]
+                curr_array.append(round(
+                    (len(fraction[fraction[method] == 6]) - found_in_all )*100 / len(fraction), 2))
+                curr_array.append(round(found_in_all * 100 / len(fraction), 2))
                 values_array.append(curr_array)
+
             plot.set_xticklabels(curr_labels, fontsize=10)
             values_array = numpy.array(values_array)
             values_array = values_array.transpose()
@@ -128,7 +140,7 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
                     legend_handles.append(bar)
 
     labels = ["Missed", "Intronic or Fragment", "Fusion", "Different structure",
-                          "Contained", "Match"]
+                          "Contained", "Match", "Match in all"]
     plt.figlegend(labels=labels, framealpha=0.3,
                   loc="center right", handles=legend_handles,
                   fontsize=12,
