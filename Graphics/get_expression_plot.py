@@ -15,7 +15,7 @@ import matplotlib.patches
 from math import floor
 import seaborn
 from utils import parse_configuration
-
+pandas.options.mode.chained_assignment = None
 
 def sort_values(key, dictionary):
     return dictionary[key]["TPM"]
@@ -107,7 +107,6 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
             __vals.dropna(inplace=True)
             __vals = __vals[__vals.apply(lambda x: min(x) == 6, 1)]
             found_in_all = len(__vals)
-            print(found_in_all)
 
             for method in methods:
                 if aligner not in method:
