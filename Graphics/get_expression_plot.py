@@ -130,9 +130,10 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
             values_array = values_array.transpose()
             X = numpy.arange(values_array.shape[1])
             for i in range(values_array.shape[0]):
+                color = colors[(i+1)*2]
                 bar = plot.bar(X, values_array[i],
                          bottom = numpy.sum(values_array[:i], axis=0),
-                         color=colors[(i+1)*2])
+                         color=color, edgecolor="grey")
                 if row == col == 0:
                     # add handles to the legend
                     bar.get_children()[0].get_sketch_params()
