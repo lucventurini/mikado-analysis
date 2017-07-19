@@ -42,6 +42,9 @@ def main():
         color_normalizer = matplotlib.colors.Normalize(0, len(options["methods"]))
         color_map = cm.get_cmap(options["colourmap"]["name"])
 
+    header = ["Method", "Division", "Fully", "Missed", "Fused"]
+    print(*header, sep="\t")
+
     for label in options["methods"]:
         for aligner in options["divisions"]:
             if options["methods"][label][aligner] is not None:
@@ -66,8 +69,13 @@ def main():
                     data[(label, aligner)][num] = len(data[(label, aligner)][num])
             else:
                 data[(label, aligner)] = [-1000] * 3
+            print(label, aligner, *data[(label, aligner)], sep="\t")
 
     # print(*data.items(), sep="\n")
+
+    # Now print out the table
+
+
 
     divisions = sorted(options["divisions"].keys())
 

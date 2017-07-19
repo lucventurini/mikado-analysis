@@ -136,22 +136,23 @@ def main():
 
     name_ar = []
     # This is tricky .. this should be divided in 2 if there is more than one level
-
+    categories = species.pop("categories")
     if len(args.level) == 1:
-        categories = species.pop("categories")
         for category in categories:
             for name in names:
-                key = [_ for _ in species.keys() if species[_]["name"] == name and species[_]["category"] == category]
+                key = [_ for _ in species.keys() if isinstance(species[_], dict) and species[_]["name"] == name and species[_]["category"] == category]
                 assert len(key) == 1
                 key = key.pop()
                 name_ar.append(key)
         name_ar = np.array(list(grouper(name_ar, ceil(len(species) / 2), None)))
     else:
-        categories = args.level
-        for level in args.level:
+        for category in categories:
             for name in names:
-                assert name in species.keys()
-                name_ar.append(name)
+                assert isinstance(species, dict)
+                key = [_ for _ in species.keys() if isinstance(species[_], dict) and species[_]["name"] == name and species[_]["category"] == category]
+                assert len(key) == 1, (key, name, category)
+                key = key.pop()
+                name_ar.append(key)
         name_ar = np.array(list(grouper(name_ar, 2, None)))
 
     # Dictionary to indicate which line should be taken given the level
@@ -254,16 +255,16 @@ def main():
                 xs = [np.array([_[1] for _ in stats[division.encode()]]) for division in divisions]
 
                 x_minimum = max(0,
-                                floor(min(np.array([x for x in _ if x >= 0]).min() for _ in xs)) - 5)
+                                floor(floor(min(np.array([x for x in _ if x >= 0]).min() for _ in xs)) * 0.95))
                 # x_minimum = max(0,
                 #                 floor(min(_.min() for _ in xs)) - 5)
                 y_minimum = max(0,
-                                floor(min(np.array([y for y in _ if y >= 0]).min() for _ in ys)) - 5)
+                                floor(floor(min(np.array([y for y in _ if y >= 0]).min() for _ in ys)) * 0.95))
 
                 x_maximum = min(100,
-                                ceil(max(_.max() for _ in xs)) + 5)
+                                ceil(ceil(max(_.max() for _ in xs)) * 1.05))
                 y_maximum = min(100,
-                                ceil(max(_.max() for _ in ys)) + 5)
+                                ceil(ceil(max(_.max() for _ in ys)) * 1.05))
                 plotf1curves(plot, fstepsize=ceil(min(x_maximum - x_minimum, y_maximum - y_minimum) / 10))
                 best_f1 = (-1, [])
 
@@ -319,12 +320,16 @@ def main():
         p1 = axes[0, col]
         p2 = axes[1, col]
 
-        x_min, x_max = min(p1.get_xlim()[0], p2.get_xlim()[0]), max(p1.get_xlim()[1], p2.get_xlim()[1])
-        y_min, y_max = min(p1.get_ylim()[0], p2.get_ylim()[0]), max(p1.get_ylim()[1], p2.get_ylim()[1])
-        p1.set_xlim(x_min, x_max)
-        p2.set_xlim(x_min, x_max)
-        p1.set_ylim(y_min, y_max)
-        p2.set_ylim(y_min, y_max)
+        if len(args.level) == 1:
+            x_min, x_max = min(p1.get_xlim()[0], p2.get_xlim()[0]), max(p1.get_xlim()[1], p2.get_xlim()[1])
+            p1.set_xlim(x_min, x_max)
+            p2.set_xlim(x_min, x_max)
+            y_min, y_max = min(p1.get_ylim()[0], p2.get_ylim()[0]), max(p1.get_ylim()[1], p2.get_ylim()[1])
+            p1.set_ylim(y_min, y_max)
+            p2.set_ylim(y_min, y_max)
+        # else:
+        #     # Only uniform Y
+        #     y1_min, y1_max = min(p1.get_xlim()[0])
 
     div_labels = []
 

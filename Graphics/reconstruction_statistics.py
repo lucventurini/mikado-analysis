@@ -73,6 +73,7 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-c", "--configuration", required=True, type=argparse.FileType("r"))
     parser.add_argument("--out", required=True)
+    parser.add_argument("--tight", default=False, action="store_true")
     parser.add_argument("--title", default="Mikado stats")
     parser.add_argument("--format", default=None, choices=["png", "pdf", "ps", "eps", "svg"])
     parser.add_argument("--levels", default=None, choices=["base", "exon", "intron",
@@ -258,13 +259,18 @@ def main():
 
         # print(suitable_x.min(), index, suitable_x)
 
-        x_minimum = max(0, floor(suitable_x.min()) - 5)
-        y_minimum = max(0, floor(suitable_y.min()) - 5)
+        if args.tight is True:
+            margin = 1
+        else:
+            margin = 5
+            
+        x_minimum = max(0, floor(suitable_x.min()) - margin)
+        y_minimum = max(0, floor(suitable_y.min()) - margin)
 
         x_maximum = min(100,
-                        ceil(max(_.max() for _ in xs)) + 5)
+                        ceil(max(_.max() for _ in xs)) + margin)
         y_maximum = min(100,
-                        ceil(max(_.max() for _ in ys)) + 5)
+                        ceil(max(_.max() for _ in ys)) + margin)
 
         plotf1curves(plot, fstepsize=ceil(min(x_maximum - x_minimum, y_maximum - y_minimum)/10))
         best_f1 = (-1, [])

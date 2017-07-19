@@ -84,21 +84,24 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
     # Structure of the dataset:
     # <TID> <Expr> <Method1> <Method2> ... <MethodN>
 
-    for row, aligner in enumerate(["STAR", "TopHat"]):
+    for row, aligner in enumerate(sorted(options["divisions"])):
         for col in range(5):
             # if current == 6:
             #     axes[row, col].xaxis.set_visible(False)
             #     axes[row, col].yaxis.set_visible(False)
             #     continue
             fraction = order[col][0]
-            plot = axes[row, col]
+            if nrows > 1:
+                plot = axes[row, col]
+            else:
+                plot = axes[col]
             plot.set_title("{} $TPM$ (${}$)".format(order[col][1], aligner))
             plot.set_ylim(0, 100)
             _axes = plot.axes
             _axes.set_xticks(numpy.arange(0, 5, 1))
             curr_labels = []
 
-            for tick in axes[row,col].get_xticklabels():
+            for tick in plot.get_xticklabels():
                 tick.set_rotation(60)
             values_array = []
 
@@ -239,7 +242,7 @@ def main():
         values[row["target_id"]]["tid"] = row["target_id"]
 
     labels = []
-    for aligner in ("STAR", "TopHat"):
+    for aligner in sorted(options["divisions"]):
         for method in options["methods"]:
             label = "{} ({})".format(method, aligner)
             labels.append(label)
@@ -276,7 +279,7 @@ def main():
 
             #        out.writerow(values[tid])
     data = pandas.DataFrame(data, columns=["tid", "TPM"] + labels)
-    generate_plot(data, args, options)
+    generate_plot(data, args, options, nrows=len(options["divisions"]))
 
     return
 

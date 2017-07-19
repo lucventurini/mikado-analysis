@@ -10,6 +10,11 @@ import matplotlib.colors
 import intervene.modules.venn.list_venn as ivenn
 import re
 from utils import parse_configuration
+import numpy
+
+
+def clamp(x):
+    return max(0, min(x, 255))
 
 
 def main():
@@ -26,7 +31,7 @@ def main():
     parser.add_argument("-o", "--out",
                         type=str, help="Output file", required=True)
     parser.add_argument("--format", choices=["svg", "tiff", "png"], default="svg")
-    parser.add_argument("-a", "--aligner", choices=["STAR", "TopHat"],
+    parser.add_argument("-a", "--aligner", # choices=["STAR", "TopHat"],
                         required=True)
     parser.add_argument("--transcripts", action="store_true", default=False,
                         help="Flag. If set, Venn plotted against transcripts, not genes.")
@@ -96,13 +101,25 @@ def main():
         # cols = rpy2.robjects.vectors.StrVector(cols)
     else:
         cols = [options["methods"][_]["colour"] for _ in options["methods"]]
+        for index, colour in enumerate(cols):
+            matched = re.match("\(([0-9]*), ([0-9]*), ([0-9]*)\)$", colour)
+            if matched:
+                colour = "#{0:02x}{1:02x}{2:02x}{3:02x}".format(clamp(int(matched.groups()[0])),
+                                                                 clamp(int(matched.groups()[1])),
+                                                                 clamp(int(matched.groups()[2])),
+                                                                50)
+
+            cols[index] = colour
+            
+        print(cols)
         # cols = rpy2.robjects.vectors.StrVector(cols)
 
     fig, ax = funcs[len(sets)](labels, names=list(options["methods"].keys()),
-                               # colors=cols,
-                               fontsize=20,
+                               colors=cols,
+                               fontsize=100,
                                dpi=args.dpi,
-                               figsize=(15, 15) if len(options) < 5 else (20, 20))
+                               alpha=0.5,
+                               figsize=(7, 7) if len(options) < 5 else (12, 12))
     fig.savefig("{}.{}".format(args.out, args.format),
                 dpi=args.dpi)
     print("Saved the figure to {}.{}".format(args.out, args.format))
