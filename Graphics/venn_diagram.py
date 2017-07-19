@@ -16,6 +16,8 @@ import numpy
 def clamp(x):
     return max(0, min(x, 255))
 
+def clamp(x):
+    return max(0, min(x, 255))
 
 def main():
     
@@ -102,21 +104,16 @@ def main():
     else:
         cols = [options["methods"][_]["colour"] for _ in options["methods"]]
         for index, colour in enumerate(cols):
-            matched = re.match("\(([0-9]*), ([0-9]*), ([0-9]*)\)$", colour)
+            matched = re.match("\(([0-9]*), ([0-9]*), ([0-9]*)\)$", colour
             if matched:
-                colour = "#{0:02x}{1:02x}{2:02x}{3:02x}".format(clamp(int(matched.groups()[0])),
-                                                                 clamp(int(matched.groups()[1])),
-                                                                 clamp(int(matched.groups()[2])),
-                                                                50)
-
-            cols[index] = colour
+                nums = (int(matched.groups()[0]), int(matched.groups()[1]), int(matched.groups()[2]))
+                if nums == (255, 255, 255):  # Pure white
+                    nums = (125, 125, 125)
+                cols[index] = "#{0:02x}{1:02x}{2:02x}{3:02x}".format(clamp(nums[0]), clamp(nums[1]), clamp(nums[2]), 80)
             
-        print(cols)
-        # cols = rpy2.robjects.vectors.StrVector(cols)
-
     fig, ax = funcs[len(sets)](labels, names=list(options["methods"].keys()),
                                colors=cols,
-                               fontsize=100,
+                               fontsize=30,
                                dpi=args.dpi,
                                alpha=0.5,
                                figsize=(7, 7) if len(options) < 5 else (12, 12))
