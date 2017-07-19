@@ -289,11 +289,13 @@ def main():
                     colour = "black"
                 else:
                     colour = color_map(color_normalizer(options["methods"][label]["index"]))
+                # The size has to change in a inversely related way compared to the number of plots
+                # Top must be 100
                 plot.scatter(x, y,
                              label=label,
                              # label="{0} ({1})".format(label, division),
                              c=colour, marker=options["divisions"][division]["marker"],
-                             edgecolor="k", s=[50.0], alpha=.8)
+                             edgecolor="k", s=[150/max(nrows,ncols)], alpha=.8)
 
         circle_rad = 30
         for best in best_f1[1]:

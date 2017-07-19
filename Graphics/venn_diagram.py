@@ -11,6 +11,8 @@ import intervene.modules.venn.list_venn as ivenn
 import re
 from utils import parse_configuration
 
+def clamp(x):
+    return max(0, min(x, 255))
 
 def main():
     
@@ -96,11 +98,20 @@ def main():
         # cols = rpy2.robjects.vectors.StrVector(cols)
     else:
         cols = [options["methods"][_]["colour"] for _ in options["methods"]]
+        for index, colour in enumerate(cols):
+            matched = re.match("\(([0-9]*), ([0-9]*), ([0-9]*)\)$", colour)
+            if matched:
+                nums = (int(matched.groups()[0]), int(matched.groups()[1]), int(matched.groups()[2]))
+                if nums == (255, 255, 255):  # Pure white
+                    nums = (125, 125, 125)
+                cols[index] = "#{0:02x}{1:02x}{2:02x}{3:02x}".format(clamp(nums[0]), clamp(nums[1]), clamp(nums[2]), 80)
+
         # cols = rpy2.robjects.vectors.StrVector(cols)
+    print(cols)
 
     fig, ax = funcs[len(sets)](labels, names=list(options["methods"].keys()),
-                               # colors=cols,
-                               fontsize=20,
+                               colors=cols,
+                               fontsize=30,
                                dpi=args.dpi,
                                figsize=(15, 15) if len(options) < 5 else (20, 20))
     fig.savefig("{}.{}".format(args.out, args.format),

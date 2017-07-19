@@ -66,7 +66,17 @@ Junctions: {juncs}""".format(cli=" ".join(sys.argv),
     tids = dict()
 
     exons = []
-    with open("exons.gff", "w") as exon_out:
+    if not os.path.exists("exons.gff"):
+        with open("exons.gff", "w") as exon_out, open(args.reference) as ref:
+            for line in Mikado.parsers.GFF.GFF3(ref):
+                if line.feature == "exon":
+                    count += 1
+                    exons.append(line)
+                elif line.is_transcript is True:
+                    tids[line.id] = line.parent
+        print(*sorted(exons), sep="\n", file=exon_out)
+        pass
+    else:
         with open(args.reference) as ref:
             for line in Mikado.parsers.GFF.GFF3(ref):
                 if line.feature == "exon":
@@ -74,8 +84,8 @@ Junctions: {juncs}""".format(cli=" ".join(sys.argv),
                     exons.append(line)
                 elif line.is_transcript is True:
                     tids[line.id] = line.parent
-
-        print(*sorted(exons), sep="\n", file=exon_out)
+                    
+                    
     if count == 0:
         logger.critical("No exon found in the reference annotation!")
         sys.exit(1)
