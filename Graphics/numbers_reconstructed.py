@@ -11,6 +11,7 @@ import matplotlib.patches as mpatches
 from utils import parse_configuration
 import os
 import re
+import sys
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -28,9 +29,9 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--configuration", required=True, type=argparse.FileType("r"))
-    parser.add_argument("--title", required=True)
+    parser.add_argument("--title", required=False, default="")
     parser.add_argument("--log", action="store_true", default=False)
-    parser.add_argument("--out", required=True)
+    parser.add_argument("--out", required=False, default=None, help="Output file. If unspecified, the script will exit after printing the numbers.")
     # parser.add_argument("refmap", nargs=10, type=argparse.FileType("rt"))
     args = parser.parse_args()
 
@@ -75,7 +76,8 @@ def main():
 
     # Now print out the table
 
-
+    if args.out is None:
+        sys.exit(0)
 
     divisions = sorted(options["divisions"].keys())
 

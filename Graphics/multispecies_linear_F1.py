@@ -149,6 +149,7 @@ def main():
             for division in options["divisions"]:
                 stats[division.encode()] = []
 
+            max_point = float("-inf")
             for counter, (method, division) in enumerate(reversed(method_names), 1):
                     # print("Method:", method, "Aligner:", division)
                 try:
@@ -176,6 +177,7 @@ def main():
                     # print(level, method, division, (precision, recall, f1))
                     # stats[division.encode()].append((precision, recall, f1))
                     # We can plot directly
+                    max_point = max([max_point] + [_ + 7 for _ in (precision, recall, f1)])
                     plot.scatter(precision, counter,
                                  label="Precision",
                                  # label="{0} ({1})".format(label, division),
@@ -193,7 +195,9 @@ def main():
                                  edgecolor="k", s=[100.0], alpha=1)
 
             __axes = plot.axes
-            __axes.set_xlim(0, 100)
+            max_point = min(100, max_point)
+            print(name, max_point)
+            __axes.set_xlim(0, max_point)
             __axes.set_ylim(0, len(method_names) + 1)
             __axes.spines["top"].set_visible(False)
             __axes.spines["right"].set_visible(False)

@@ -86,6 +86,14 @@ def main():
     # Now use intervene venn
 
     labels = ivenn.get_labels([list(sets[_]) for _ in sets])
+    sums = dict((_, 0) for _ in range(len(sets) + 1))
+    for label in labels:
+        sums[sum(int(_) for _ in label)] += int(labels[label])
+        continue
+    print("Sums")
+    for num in sorted(sums.keys()):
+        print(num, sums[num])
+
     print("Labels:", labels)
     funcs = {2: ivenn.venn2,
              3: ivenn.venn3,
@@ -104,7 +112,7 @@ def main():
     else:
         cols = [options["methods"][_]["colour"] for _ in options["methods"]]
         for index, colour in enumerate(cols):
-            matched = re.match("\(([0-9]*), ([0-9]*), ([0-9]*)\)$", colour
+            matched = re.match("\(([0-9]*), ([0-9]*), ([0-9]*)\)$", colour)
             if matched:
                 nums = (int(matched.groups()[0]), int(matched.groups()[1]), int(matched.groups()[2]))
                 if nums == (255, 255, 255):  # Pure white

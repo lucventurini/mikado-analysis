@@ -40,7 +40,8 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
     color_map = cm.get_cmap(options["colourmap"]["name"])
     color_normalizer = matplotlib.colors.Normalize(2, 15)
 
-    colors = {1: "white", 2: "white"}
+    colors = {1: "#{:02x}{:02x}{:02x}{:02x}".format(*(230, 230, 230, 80))}
+    colors[2] = colors[1]
 
     for num in range(3, 8 * 2 + 1):
         colors[num] = color_map(color_normalizer(num))
@@ -143,7 +144,7 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
                     legend_handles.append(bar)
 
     labels = ["Missed", "Intronic or Fragment", "Fusion", "Different structure",
-                          "Contained", "Match", "Match in all"]
+                          "Contained", "Reconstructed", "Reconstructed\nby all methods"]
     plt.figlegend(labels=labels, framealpha=0.3,
                   loc="center right", handles=legend_handles,
                   fontsize=12,

@@ -94,6 +94,9 @@ def main():
                         default=0,
                         type=int,
                         help="Colour map to use. Default: use user-specified colours.")
+    parser.add_argument("-e", "--equal", action="store_true",
+                        default=False,
+                        help="Flag. If switched on, all subplots will share the same X and Y limits.")
     parser.add_argument("-s", "--style", choices=plt.style.available, default="ggplot")
     parser.add_argument("--title", default="Mikado stats for transcript level")
     args = parser.parse_args()
@@ -107,7 +110,7 @@ def main():
     names = species.pop("names")
 
     if len(args.level) == 1:
-        ncols = ceil(len(species) / 2)
+        ncols = ceil(len([_ for _ in species if _ not in ("categories", "names")]) / 2)
     else:
         ncols = len(species)
 
@@ -140,7 +143,9 @@ def main():
     if len(args.level) == 1:
         for category in categories:
             for name in names:
+                print(category, name)
                 key = [_ for _ in species.keys() if isinstance(species[_], dict) and species[_]["name"] == name and species[_]["category"] == category]
+                print(key)
                 assert len(key) == 1
                 key = key.pop()
                 name_ar.append(key)
@@ -260,11 +265,11 @@ def main():
                 #                 floor(min(_.min() for _ in xs)) - 5)
                 y_minimum = max(0,
                                 floor(floor(min(np.array([y for y in _ if y >= 0]).min() for _ in ys)) * 0.95))
-
                 x_maximum = min(100,
                                 ceil(ceil(max(_.max() for _ in xs)) * 1.05))
                 y_maximum = min(100,
                                 ceil(ceil(max(_.max() for _ in ys)) * 1.05))
+
                 plotf1curves(plot, fstepsize=ceil(min(x_maximum - x_minimum, y_maximum - y_minimum) / 10))
                 best_f1 = (-1, [])
 
@@ -320,7 +325,7 @@ def main():
         p1 = axes[0, col]
         p2 = axes[1, col]
 
-        if len(args.level) == 1:
+        if len(args.level) == 1 and args.equal is True:
             x_min, x_max = min(p1.get_xlim()[0], p2.get_xlim()[0]), max(p1.get_xlim()[1], p2.get_xlim()[1])
             p1.set_xlim(x_min, x_max)
             p2.set_xlim(x_min, x_max)
