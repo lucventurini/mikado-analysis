@@ -2,6 +2,64 @@ import yaml
 from collections import OrderedDict, defaultdict
 from operator import itemgetter
 import os
+import re
+import pandas as pd
+import numpy as np
+import warnings
+warnings.filterwarnings("ignore", 'This pattern has match groups')  # Remove annoying useless warnings
+
+
+def parse_refmaps(orig_stats, filtered_stats, transcripts=False, return_sets=False, return_base=False):
+
+    if orig_stats is None:
+        if return_sets is True:
+            return [set(), set(), set()]
+        else:
+            return [-1000] * 3
+
+    orig_refmap = "{}.refmap".format(
+        re.sub(".stats$", "", orig_stats))
+    orig_tmap = "{}.tmap".format(
+        re.sub(".stats$", "", orig_stats))
+
+    filtered_refmap = "{}.refmap".format(
+        re.sub(".stats$", "", filtered_stats))
+
+    refmap = pd.read_csv(orig_refmap, delimiter="\t")
+    filtered_refmap = pd.read_csv(filtered_refmap, delimiter="\t")
+    tmap = pd.read_csv(orig_tmap, delimiter="\t")
+    
+    if return_base is True:
+        if transcripts is True:
+            full = filtered_refmap.ref_id.unique().astype(set)
+            fused = refmap.ref_id.unique().astype(set)
+            missed = filtered_refmap.ref_id.unique().astype(set)
+        else:
+            full = filtered_refmap.ref_gene.unique().astype(set)
+            fused = refmap.ref_gene.unique().astype(set)
+            missed = filtered_refmap.ref_gene.unique().astype(set)
+    else:
+        if transcripts is True:
+            full = refmap[refmap.ccode.str.contains("(=|_)", regex=True, na=False)].ref_id.unique().astype(set)
+            missed = filtered_refmap[filtered_refmap.ccode.isin((np.nan, "p", "P", "i", "I", "ri", "rI", "X", "x"))].ref_id.unique().astype(set)
+            fused = tmap[(tmap.ccode.str.contains("f", na=False)) & (~tmap.ccode.str.contains("(=|_)", regex=True, na=False))].ref_id.unique().astype(set)
+        else:
+            full = set(refmap[refmap.ccode.str.contains("(=|_)", regex=True, na=False)].ref_gene.unique())
+            missed = set(filtered_refmap[filtered_refmap.best_ccode.isin((np.nan, "p", "P", "i", "I", "ri", "rI", "X", "x"))].ref_gene.unique())
+            fused = set(tmap[(tmap.ccode.str.contains("f", na=False)) & (~tmap.ccode.str.contains("(=|_)", regex=True, na=False))].ref_gene.unique())
+        
+        assert isinstance(full, set), type(full)
+        assert isinstance(missed, set), type(full)
+        if len(set.intersection(full, missed)) > 0:
+            # Remove from the missed those that are fully reconstructed. This is due to strange annotations in human
+            missed = set.difference(missed, set.intersection(full, missed))
+
+    if return_sets is False:
+        res = [len(full), len(missed), len(fused)]
+    else:
+        res = [full, missed, fused]
+
+    return res
 
 
 def parse_configuration(configuration, exclude_mikado=False, prefix=None):
