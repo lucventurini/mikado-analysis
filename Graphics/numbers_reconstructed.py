@@ -1,17 +1,22 @@
 import matplotlib.pyplot as plt
 from math import ceil
-from collections import OrderedDict
+from operator import itemgetter
+from collections import OrderedDict, defaultdict
 import matplotlib.lines as mlines
 import matplotlib.colors
 import matplotlib.cm as cm
-import csv
+# import csv
 import argparse
 from itertools import zip_longest
 import matplotlib.patches as mpatches
-from utils import parse_configuration
+from utils import parse_configuration, parse_refmaps
 import os
 import re
 import sys
+import numpy as np
+import pandas as pd
+import multiprocessing
+# from brokenaxes import brokenaxes
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -34,6 +39,9 @@ def main():
     parser.add_argument("--out", required=False, default=None, help="Output file. If unspecified, the script will exit after printing the numbers.")
     parser.add_argument("--genes", default=False, action="store_true",
                         help="Flag. If switched on, the gene level will be used instead of the transcript level.")
+    parser.add_argument("-p", "--procs", default=multiprocessing.cpu_count(), type=int)
+    parser.add_argument("--transcripts", action="store_true", default=False)
+    parser.add_argument("--division", action="store_true", default=False)
     # parser.add_argument("refmap", nargs=10, type=argparse.FileType("rt"))
     args = parser.parse_args()
 
@@ -47,6 +55,8 @@ def main():
 
     header = ["Method", "Division", "Fully", "Missed", "Fused"]
     print(*header, sep="\t")
+
+    pool = multiprocessing.Pool(processes=args.procs)
 
     for label in options["methods"]:
         for aligner in options["divisions"]:
@@ -80,8 +90,14 @@ def main():
                                 data[(label, aligner)][1].add(row["ref_id"])
                 for num in range(3):
                     data[(label, aligner)][num] = len(data[(label, aligner)][num])
+                orig_stats, filtered_stats = options["methods"][label][aligner][:2]
             else:
-                data[(label, aligner)] = [-1000] * 3
+                orig_stats, filtered_stats = None, None
+            data[(label, aligner)] = pool.apply_async(parse_refmaps, (orig_stats, filtered_stats, args.transcripts))
+
+    for label in options["methods"]:
+        for aligner in options["divisions"]:
+            data[(label, aligner)] = data[(label, aligner)].get()
             print(label, aligner, *data[(label, aligner)], sep="\t")
 
     # print(*data.items(), sep="\n")
@@ -91,30 +107,138 @@ def main():
     if args.out is None:
         sys.exit(0)
 
-    divisions = sorted(options["divisions"].keys())
+    # divisions = sorted(options["divisions"].keys())
 
-    figure, axes = plt.subplots(nrows=3,
-                                ncols=1,
-                                dpi=300, figsize=(8, 6))
+    if args.division is True:
+        figsize = (14, 12)
+    else:
+        figsize = (6, 8)
+
+    figure, axes = plt.subplots(nrows=1,
+                                ncols=3,
+                                dpi=300, figsize=figsize)
     figure.suptitle(args.title)
 
-    newticks = ["Recovered genes", "Missed genes", "Fused genes"]
+    handles = []
+    labels = []
+
+    factor = 10
+
     for pos, ax in enumerate(axes):
         ax.set_ylim(0, 2)
         max_x = max(data[_][pos] for _ in data) + 500
         min_x = max(0, min(data[_][pos] for _ in data if data[_][pos] > 0) - 500)
-        ax.set_xlim(min_x, max_x)
-        ax.plot((1, max_x), (1, 1), 'k-')
+        ax.set_ylim(min_x, max_x)
+        if args.division is False:
+            ax.set_xlim(0, 2.5)
+        else:
+            ax.set_xlim(-2, len(options["divisions"]) * factor)
+        # ax.plot((1, max_x), (1, 1), 'k-')
         ax.tick_params(axis='both', which='major', labelsize=10)
-        ax.set_yticks([1])
-        ax.set_yticklabels([newticks[pos]], fontsize=15)
+        # ax.set_xticklabels([newticks[pos]], fontsize=15)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
-        ax.spines["left"].set_visible(False)
-        ax.tick_params(axis="y", left="off", right="off")
-        ax.tick_params(axis="x", top="off")
-        if pos == 2:
-            ax.set_xlabel("Number of genes", fontsize=12)
+        ax.spines["left"].set_visible(True)
+        ax.spines["bottom"].set_visible(True)
+        ax.tick_params(axis="y", left="on", right="off")
+        if args.division is False:
+            ax.tick_params(axis="x", top="off", bottom="off")
+        else:
+            ax.tick_params(axis="x", top="off", bottom="on")
+        if pos == 0:
+            if args.transcripts is True:
+                ax.set_ylabel("Number of transcripts", fontsize=16)
+            else:
+                ax.set_ylabel("Number of genes", fontsize=16)
+            ax.set_xlabel("Fully reconstructed", fontsize=16)
+        elif pos == 1:
+            ax.set_xlabel("Missed", fontsize=16)
+        else:
+            ax.set_xlabel("Fused", fontsize=16)
+
+        if args.division is True:
+            ax.set_xticks([factor * (_ + 1 / 4) for _ in range(len(options["divisions"]))])
+            ax.set_xticklabels(options["divisions"], rotation=45, fontsize=14)
+
+        if args.division is False:
+            points = []
+        else:
+            points = defaultdict(list)
+
+        for index, tup in enumerate(data.keys()):
+            method, division = tup
+            if options["colourmap"]["use"] is False:
+                colour = options["methods"][method]["colour"]
+                matched = re.match("\(([0-9]*), ([0-9]*), ([0-9]*)\)$", colour)
+                if matched:
+                    colour = "#{0:02x}{1:02x}{2:02x}".format(clamp(int(matched.groups()[0])),
+                                                             clamp(int(matched.groups()[1])),
+                                                             clamp(int(matched.groups()[2])))
+            elif options["methods"][method]["colour"] in ("black", "k"):
+                colour = "black"
+            else:
+                colour = color_map(color_normalizer(options["methods"][division]["index"]))
+
+            marker = options["divisions"][division]["marker"]
+            cat = "{} ({})".format(method, division)
+            labels.append(cat)
+
+            point = data[tup][pos]
+            if args.division is False:
+                points.append([point, cat, colour, marker])
+            else:
+                points[division].append([point, cat, colour, marker])
+
+        if args.division is False:
+            points = sorted(points, key=itemgetter(0))
+            for index, point in enumerate(points):
+                point, cat, colour, marker = point
+                x_coord = 0.5 + (index % 4 / 2)
+                handle = axes[pos].scatter(x_coord, point,
+                                           alpha=1,
+                                           label=cat,
+                                           color=colour,
+                                           marker=marker,
+                                           edgecolor="k",
+                                           s=100)
+                handle.get_sketch_params()
+                if pos == 0:
+                    handles.append(handle)
+                handle = mlines.Line2D([], [], markersize=5, color=colour, marker=marker, label=cat, alpha=0.6)
+        else:
+
+            max_last_xcoord = None
+
+            for dindex, division in enumerate(options["divisions"].keys()):
+                max_xcoord = -100
+                min_xcoord = 100000
+                dpoints = sorted(points[division], key=itemgetter(0))
+                for index, point in enumerate(dpoints):
+                    point, cat, colour, marker = point
+                    if index % 3 == 0:
+                        x_coord = factor * dindex
+                    elif index % 3 == 2:
+                        x_coord = factor * (dindex + 1 / 2)
+                    else:
+                        x_coord = factor * (dindex + 1 / 4)
+
+                    max_xcoord = max(x_coord, max_xcoord)
+                    min_xcoord = min(x_coord, min_xcoord)
+                    # print(x_coord, point, cat)
+                    handle = axes[pos].scatter(x_coord, point,
+                                               alpha=1,
+                                               label=cat,
+                                               color=colour,
+                                               marker=marker,
+                                               edgecolor="k",
+                                               s=100)
+                    handle.get_sketch_params()
+                    if pos == 0:
+                        handles.append(handle)
+                    handle = mlines.Line2D([], [], markersize=5, color=colour, marker=marker, label=cat, alpha=0.6)
+                if max_last_xcoord is not None and min_xcoord < max_last_xcoord:
+                    raise ValueError("Overlapping X values")
+                max_last_xcoord = max_xcoord
 
     # Set the axis to log if necessary
     if args.log is True:
@@ -175,7 +299,7 @@ def main():
                 colour = "#{0:02x}{1:02x}{2:02x}".format(clamp(int(matched.groups()[0])),
                                                          clamp(int(matched.groups()[1])),
                                                          clamp(int(matched.groups()[2])))
-        elif options["methods"][label]["colour"] in ("black", "k"):
+        elif options["methods"][method]["colour"] in ("black", "k"):
             colour = "black"
         else:
             colour = color_map(color_normalizer(options["methods"][method]["index"]))
@@ -183,19 +307,24 @@ def main():
         patch = mpatches.Patch(facecolor=colour, linewidth=1, edgecolor="k")
         div_labels.append((patch, method))
 
+    if args.division is True:
+        fs = 16
+    else:
+        fs = 10
+
     plt.figlegend(handles=[_[0] for _ in div_labels],
                   labels=[_[1] for _ in div_labels],
                   loc="lower center",
                   scatterpoints=1,
-                  ncol=ceil(len(options["methods"])*2/4), fontsize=10,
+                  ncol=min(ceil(len(options["methods"])*2/4), 3), fontsize=fs,
                   framealpha=0.5)
     plt.tight_layout(pad=0.5,
                      h_pad=1,
                      w_pad=1,
-                     rect=[0.1,  # Left
-                           0.25,  # Bottom
-                           1,  # Right
-                           0.9])  # Top
+                     rect=[0.05,  # Left
+                           0.15,  # Bottom
+                           0.95,  # Right
+                           0.95])  # Top
     out = "{}.{}".format(os.path.splitext(args.out)[0], options["format"])
     plt.savefig(out,
                 format=options["format"],

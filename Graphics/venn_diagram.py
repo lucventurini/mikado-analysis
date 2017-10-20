@@ -1,16 +1,18 @@
-import readline
-import rpy2.robjects
+# import readline
+# import rpy2.robjects
 import csv
+import multiprocessing
 from collections import OrderedDict, Counter
-from rpy2.robjects.packages import importr
+# from rpy2.robjects.packages import importr
 import itertools
 import argparse
 import matplotlib.cm as cm
 import matplotlib.colors
 import intervene.modules.venn.list_venn as ivenn
 import re
-from utils import parse_configuration
-import numpy
+import sys
+from utils import parse_configuration, parse_refmaps
+# import numpy
 
 
 def clamp(x):
@@ -34,22 +36,20 @@ def main():
                         type=str, help="Output file", required=True)
     parser.add_argument("--format", choices=["svg", "tiff", "png"], default="svg")
     parser.add_argument("-a", "--aligner", # choices=["STAR", "TopHat"],
-                        required=True)
+                        required=True, nargs="+")
     parser.add_argument("--transcripts", action="store_true", default=False,
                         help="Flag. If set, Venn plotted against transcripts, not genes.")
     parser.add_argument("--dpi", default=300, type=int)
     parser.add_argument("--title", default="Venn Diagram")
+    parser.add_argument("--procs", default=1, type=int)
     args = parser.parse_args()
 
     options = parse_configuration(args.configuration, exclude_mikado=args.exclude)
 
-    sets = OrderedDict.fromkeys(options["methods"])
+    sets = OrderedDict.fromkeys(["{}\n({})".format(*_) for _ in itertools.product(options["methods"], args.aligner)])
 
-    for k in sets:
-        sets[k] = set()
-
-    total = Counter()
-    first = True
+    for k in list(sets.keys()) + ["base"]:
+        sets[k] = {"full": set(), "fusion": set(), "missing": set()}
 
     # Update the sets for each gene and label
     if args.transcripts is True:
@@ -61,45 +61,76 @@ def main():
         ccode = "best_ccode"
         tag = "genes"
 
+    first = True
+
+    pool = multiprocessing.Pool(processes=args.procs)
+    proxies = dict().fromkeys(sets.keys())
+
     for method in options["methods"]:
-        refmap = "{}.refmap".format(
-            re.sub(".stats$", "", options["methods"][method][args.aligner][0]))
-        with open(refmap) as ref:
-            tsv = csv.DictReader(ref, delimiter="\t")
-            for row in tsv:
-                if first:
-                    total.update([row[colname]])
-                if row[ccode].lower() in ("na", "x", "p", "i", "ri") and args.type == "missing":
-                    sets[method].add(row[colname])
-                elif row[ccode] in ("=", "_") and args.type == "full":
-                    sets[method].add(row[colname])
-                elif row[ccode][0] == "f" and args.type == "fusion":
-                    sets[method].add(row[colname])
-                else:
-                    continue
-            if first:
-                for gid in total:
-                    total[gid] = 0
-                first = False
-    print("Loaded RefMaps.")
+        for aligner in args.aligner:
+            if options["methods"][method][aligner] is not None:
+                orig_stats, filtered_stats = options["methods"][method][aligner][:2]
+            else:
+                orig_stats, filtered_stats = None, None
+            if first is True and orig_stats is not None:
+                proxies["base"] = pool.apply_async(parse_refmaps, (orig_stats, filtered_stats, args.transcripts, True, True))
+            key = "{}\n({})".format(method, aligner)
+            proxies[key] = pool.apply_async(parse_refmaps, (orig_stats, filtered_stats, args.transcripts, True, False))
+
+    for proxy in proxies:
+        sets[proxy]["full"], sets[proxy]["missing"], sets[proxy]["fusion"] = proxies[proxy].get()
+
+    print("Loaded RefMaps.", file=sys.stderr)
 
     # Now use intervene venn
 
-    labels = ivenn.get_labels([list(sets[_]) for _ in sets])
-    sums = dict((_, 0) for _ in range(len(sets) + 1))
-    for label in labels:
-        sums[sum(int(_) for _ in label)] += int(labels[label])
-        continue
-    print("Sums")
-    for num in sorted(sums.keys()):
-        print(num, sums[num])
+    labels = dict()
+    sums = dict()
+    for typ in ["full", "missing", "fusion"]:
+        labels[typ] = ivenn.get_labels([list(sets[_][typ]) for _ in sets])
+        sums[typ] = dict()
+        for num in range(len(sets) + 1):
+            sums[typ][num] = 0
+        for label in labels[typ]:
+            # print(typ, label, sum(int(_) for _ in label), int(labels[typ][label]))
+            sums[typ][sum(int(_) for _ in label) - 1] += int(labels[typ][label])
+            continue
 
-    print("Labels:", labels)
+    print("Sums")
+    for num in sorted(range(len(sets))):
+        print(num, *[sums[_][num] for _ in ["full", "missing", "fusion"]])
+
+    print("Per method")
+    all_reconstructable = set.union(*[sets[_]["full"] for _ in sets if _ != "base"])
+    missed_all = set.intersection(*[sets[_]["missing"] for _ in sets if _ != "base"])
+    fused_all = set.intersection(*[sets[_]["fusion"] for _ in sets if _ != "base"])
+
+    for ds in sets:
+        if ds == "base":
+            continue
+        key = " ".join(ds.split("\n"))
+        row = [key]
+        row.append(len(sets[ds]["full"]))
+        row.append(len(set.difference(all_reconstructable, sets[ds]["full"])))
+        row.append(round(100 * len(set.difference(all_reconstructable, sets[ds]["full"]))/len(all_reconstructable), 2))
+        print(*row, sep="\t")
+        
+    # print("Labels:", labels[args.type])
+
+    if len(sets) > 6:
+        print("Too many sets to intersect ({}), exiting.".format(len(sets)), file=sys.stderr)
+        sys.exit(0)
+
     funcs = {2: ivenn.venn2,
              3: ivenn.venn3,
              4: ivenn.venn4,
              5: ivenn.venn5,
              6: ivenn.venn6,}
+
+    # Recalculate labels without the base
+    labels = dict()
+    for typ in ["full", "missing", "fusion"]:
+        labels[typ] = ivenn.get_labels([list(sets[_][typ]) for _ in sets if _ != "base"])
 
     if options["colourmap"]["use"] is True:
         color_normalizer = matplotlib.colors.Normalize(0, len(options["methods"]))
@@ -119,12 +150,16 @@ def main():
                     nums = (125, 125, 125)
                 cols[index] = "#{0:02x}{1:02x}{2:02x}{3:02x}".format(clamp(nums[0]), clamp(nums[1]), clamp(nums[2]), 80)
             
-    fig, ax = funcs[len(sets)](labels, names=list(options["methods"].keys()),
+    print(labels[args.type])
+    print([_ for _ in sets.keys() if _ != "base"])
+    print(cols)
+    fig, ax = funcs[len(sets) - 1](labels[args.type],
+                               names=[_ for _ in sets.keys() if _ != "base"],
                                colors=cols,
-                               fontsize=30,
+                               fontsize=20,
                                dpi=args.dpi,
                                alpha=0.5,
-                               figsize=(7, 7) if len(options) < 5 else (12, 12))
+                               figsize=(12, 12))
     fig.savefig("{}.{}".format(args.out, args.format),
                 dpi=args.dpi)
     print("Saved the figure to {}.{}".format(args.out, args.format))
