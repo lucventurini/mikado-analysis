@@ -14,7 +14,7 @@ from math import ceil, floor
 from scipy.stats import hmean
 from itertools import zip_longest
 from collections import OrderedDict
-from utils import parse_configuration
+from utils import parse_configuration, line_correspondence
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import yaml
@@ -72,6 +72,7 @@ def plotf1curves(axis, fstepsize=1, stepsize=0.1):
 def clamp(x):
     return max(0, min(x, 255))
 
+
 def main():
 
     parser = argparse.ArgumentParser(__doc__,
@@ -80,7 +81,7 @@ def main():
     # for each species the following:
     # - folder
     # - name
-    parser.add_argument("--species", type=argparse.FileType("r"))
+    parser.add_argument("--species", type=argparse.FileType("r"), required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--opaque", default=True, action="store_false")
     parser.add_argument("--dpi", default=1000, type=int)
@@ -161,13 +162,6 @@ def main():
         name_ar = np.array(list(grouper(name_ar, 2, None)))
 
     # Dictionary to indicate which line should be taken given the level
-    line_correspondence = {"base": 5,
-                           "exon": 7,
-                           "intron": 8,
-                           "intron_chain": 9,
-                           "transcript": 12,
-                           "gene": 15}
-
     markers = dict()
     methods = OrderedDict()
 
@@ -222,7 +216,7 @@ def main():
                         except TypeError:
                             warnings.warn("Something went wrong for {}, {}; continuing".format(
                                 method, division))
-                            stats[division.encode()].append((-10, -10, -10))
+                            stats[division.encode()].extend([(-10, -10, -10)] * len(line_correspondence))
                             continue
                         orig_lines = [line.rstrip() for line in open(orig)]
                         filtered_lines = [line.rstrip() for line in open(filtered)]

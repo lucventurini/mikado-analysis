@@ -150,11 +150,11 @@ def main():
                 ax.set_ylabel("Number of transcripts", fontsize=16)
             else:
                 ax.set_ylabel("Number of genes", fontsize=16)
-            ax.set_xlabel("Fully reconstructed", fontsize=16)
+            ax.set_xlabel("Reconstructed\ngenes", fontsize=16)
         elif pos == 1:
-            ax.set_xlabel("Missed", fontsize=16)
+            ax.set_xlabel("Missed\ngenes", fontsize=16)
         else:
-            ax.set_xlabel("Fused", fontsize=16)
+            ax.set_xlabel("Fused\ngenes", fontsize=16)
 
         if args.division is True:
             ax.set_xticks([factor * (_ + 1 / 4) for _ in range(len(options["divisions"]))])
@@ -200,7 +200,7 @@ def main():
                                            color=colour,
                                            marker=marker,
                                            edgecolor="k",
-                                           s=100)
+                                           s=150)
                 handle.get_sketch_params()
                 if pos == 0:
                     handles.append(handle)
@@ -231,7 +231,7 @@ def main():
                                                color=colour,
                                                marker=marker,
                                                edgecolor="k",
-                                               s=100)
+                                               s=150)
                     handle.get_sketch_params()
                     if pos == 0:
                         handles.append(handle)

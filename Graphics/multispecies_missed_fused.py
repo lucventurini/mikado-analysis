@@ -129,14 +129,14 @@ def main():
                     orig_refmap = "{}.refmap".format(
                         re.sub(".stats$", "", options["methods"][label][aligner][0]))
                     orig_refmap = pandas.read_csv(orig_refmap, delimiter="\t")
-                    orig_refmap = pandas.DataFrame.from_records(list(pandas.unique(
-                        orig_refmap[["ref_gene", "best_ccode"]].values)), columns=["ref_gene", "orig_ccode"])
+                    orig_refmap = orig_refmap[["ref_gene", "best_ccode"]].drop_duplicates("ref_gene")
+                    orig_refmap.columns = ["ref_gene", "orig_ccode"]
                     orig_refmap.orig_ccode.fillna("NA", inplace=True)
                     filtered_refmap = "{}.refmap".format(
                         re.sub(".stats$", "", options["methods"][label][aligner][1]))
                     filtered_refmap = pandas.read_csv(filtered_refmap, delimiter="\t")
-                    filtered_refmap = pandas.DataFrame.from_records(list(pandas.unique(
-                        filtered_refmap[["ref_gene", "best_ccode"]].values)), columns=["ref_gene", "filtered_ccode"])
+                    filtered_refmap = filtered_refmap[["ref_gene", "best_ccode"]].drop_duplicates("ref_gene")
+                    filtered_refmap.columns = ["ref_gene", "filtered_ccode"]
                     filtered_refmap.filtered_ccode.fillna("NA", inplace=True)
                     conc = pandas.merge(orig_refmap, filtered_refmap, how="outer")
                     for row in conc.itertuples():

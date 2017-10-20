@@ -50,7 +50,7 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
 
     figure, axes=plt.subplots(nrows=nrows,
                               ncols=ncols,
-                              figsize=(16, 10))
+                              figsize=(22, 10))
 
     methods = dataframe.columns[2:]
     current = 0
@@ -71,12 +71,12 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
                                           color="k")
     figure.lines.extend([Xaxis, Yaxis])
 
-    figure.text(0.92, 0.12, "$Expression$ $(TPM)$", ha="center", fontsize=15)
+    figure.text(0.92, 0.12, "$Expression$ $(TPM)$", ha="center", fontsize=25)
     figure.text(0.02,   # X location
                 0.6,  # Y location
                 "$Transcripts$ $per$ $category$ $(\%)$",  # Title
                 va="center",
-                fontsize=15,
+                fontsize=25,
                 rotation="vertical")
 
     legend_handles = []
@@ -96,7 +96,7 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
                 plot = axes[row, col]
             else:
                 plot = axes[col]
-            plot.set_title("{} $TPM$ (${}$)".format(order[col][1], aligner))
+            plot.set_title("{} $TPM$\n(${}$)".format(order[col][1], aligner), fontsize=20)
             plot.set_ylim(0, 100)
             _axes = plot.axes
             _axes.set_xticks(numpy.arange(0, 5, 1))
@@ -129,7 +129,7 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
                 curr_array.append(round(found_in_all * 100 / len(fraction), 2))
                 values_array.append(curr_array)
 
-            plot.set_xticklabels(curr_labels, fontsize=10)
+            plot.set_xticklabels(curr_labels, fontsize=20)
             values_array = numpy.array(values_array)
             values_array = values_array.transpose()
             X = numpy.arange(values_array.shape[1])
@@ -143,11 +143,11 @@ def generate_plot(dataframe, args, options, nrows=2, ncols=5):
                     bar.get_children()[0].get_sketch_params()
                     legend_handles.append(bar)
 
-    labels = ["Missed", "Intronic or Fragment", "Fusion", "Different structure",
+    labels = ["Missed", "Intronic\nor Fragment", "Fusion", "Different\nstructure",
                           "Contained", "Reconstructed", "Reconstructed\nby all methods"]
     plt.figlegend(labels=labels, framealpha=0.3,
                   loc="center right", handles=legend_handles,
-                  fontsize=12,
+                  fontsize=18,
                   ncol=1)
                   # ncol=floor(len(labels) / 2) + len(labels) % 2)
 

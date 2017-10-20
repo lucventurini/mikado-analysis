@@ -153,10 +153,14 @@ def main():
     print(labels[args.type])
     print([_ for _ in sets.keys() if _ != "base"])
     print(cols)
+    if (len(sets) - 1) == 2:
+        fontsize = 18
+    else:
+        fontsize = 20
     fig, ax = funcs[len(sets) - 1](labels[args.type],
                                names=[_ for _ in sets.keys() if _ != "base"],
                                colors=cols,
-                               fontsize=20,
+                               fontsize=fontsize,
                                dpi=args.dpi,
                                alpha=0.5,
                                figsize=(12, 12))

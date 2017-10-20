@@ -107,7 +107,7 @@ def main():
         nrows=1,
         ncols=ncols,
         dpi=args.dpi,
-        figsize=(8 / 2 * ncols, 4 / 2 * ncols))
+        figsize=(10 / 2 * ncols, 4 / 2 * ncols))
 
     figure.suptitle(" ".join(["${}$".format(_) for _ in args.title.split()]),
                     fontsize=20, style="italic", family="serif")

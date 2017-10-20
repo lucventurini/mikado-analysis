@@ -9,6 +9,14 @@ import warnings
 warnings.filterwarnings("ignore", 'This pattern has match groups')  # Remove annoying useless warnings
 
 
+line_correspondence = {"base": 5,
+                           "exon": 7,
+                           "intron": 8,
+                           "intron_chain": 9,
+                           "transcript": 12,
+                           "gene": 15}
+
+
 def parse_refmaps(orig_stats, filtered_stats, transcripts=False, return_sets=False, return_base=False):
 
     if orig_stats is None:
