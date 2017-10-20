@@ -52,7 +52,7 @@ rule orig_compare_combined:
      params:
         reference=os.path.join("Reference", "reference.gff3"),
         prefix=os.path.join("Comparisons", "{aligner}", "Original", "Combined")
-     shell: """set +u && ml mikado/1.0.0b10 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""
+     shell: """set +u && ml mikado/1.0.1 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""
 
 rule filtered_compare_combined:
      input:
@@ -64,7 +64,7 @@ rule filtered_compare_combined:
      params:
         reference=os.path.join("Reference", "filtered.gff3"),
         prefix=os.path.join("Comparisons", "{aligner}", "Filtered", "Combined")
-     shell: """set +u && ml mikado/1.0.0b10 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""
+     shell: """set +u && ml mikado/1.0.1 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""
 
 rule combine_all:
      input: list(itertools.chain([list(gtfs[aligner].values()) for aligner in aligners]))
@@ -73,6 +73,7 @@ rule combine_all:
         comb_folder=os.path.join("Comparisons", "Combined"),
         temp=os.path.join("Comparisons", "Combined", "gtf.tmp")
      message: "Collapsing input transcripts from both aligners with gffread."
+     log: os.path.join("logs", "Combination.log")
      shell: """set +u && source cufflinks-2.1.1 && mkdir -p {params.comb_folder} && cat <(sed 's:gene_id ":gene_id "STAR_:; s:transcript_id ":transcript_id "STAR_:;' Comparisons/STAR/Combined.gtf) <(sed 's:gene_id ":gene_id "TopHat_:; s:transcript_id ":transcript_id "TopHat_:;' Comparisons/TopHat/Combined.gtf)  > {params.temp} && gffread -T -M --cluster-only {params.temp} -o {output} && sed -i 's:gene_id ".*; locus ":gene_id ":' {output} && rm -f {params.temp} && sleep 60 && set -u"""
 
 rule orig_compare_all_combined:
@@ -85,7 +86,7 @@ rule orig_compare_all_combined:
      params:
         reference=os.path.join("Reference", "reference.gff3"),
         prefix=os.path.join("Comparisons", "Combined", "Original", "Combined")
-     shell: """set +u && ml mikado/1.0.0b10 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""
+     shell: """set +u && ml mikado/1.0.1 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""
 
 rule filtered_compare_all_combined:
      input:
@@ -97,7 +98,7 @@ rule filtered_compare_all_combined:
      params:
         reference=os.path.join("Reference", "filtered.gff3"),
         prefix=os.path.join("Comparisons", "Combined", "Filtered", "Combined")
-     shell: """set +u && ml mikado/1.0.0b10 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""
+     shell: """set +u && ml mikado/1.0.1 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""
 
 def my_aligner_samples(wildcards):
     return list(gtfs[wildcards.aligner].values())
@@ -108,6 +109,7 @@ rule prepare_trinity_star:
        gtf=gtfs["STAR"]["Trinity"],
        tmp1=temp(gtfs["STAR"]["Trinity"] + ".tmp1"),
        tmp2=temp(gtfs["STAR"]["Trinity"] + ".tmp2"),
+     log: os.path.join("logs", "prepare_trinity_star.log")
      shell: """set +u && source cufflinks-2.2.1 && gffread --force-exons -T -O -o {output.tmp1} {input} && sed -i 's:transcript_id "\([^"]*\)":transcript_id "\\1"; gene_id "\\1.gene":' {output.tmp1} && add_transcript_feature_to_gtf.py {output.tmp1} {output.tmp2} && gffread -O -T -M --cluster-only -o {output.tmp1} {output.tmp2} && sed 's:gene_id ".*; locus ":gene_id ":' {output.tmp1} > {output.gtf} && sleep 30 && set -u"""
 
 rule prepare_trinity_tophat:
@@ -116,11 +118,13 @@ rule prepare_trinity_tophat:
        gtf=gtfs["TopHat"]["Trinity"],
        tmp1=temp(gtfs["TopHat"]["Trinity"] + ".tmp1"),
        tmp2=temp(gtfs["TopHat"]["Trinity"] + ".tmp2"),
+     log: os.path.join("logs", "prepare_trinity_tophat.log")
      shell: """set +u && source cufflinks-2.2.1 && gffread --force-exons -T -O -o {output.tmp1} {input} && sed -i 's:transcript_id "\([^"]*\)":transcript_id "\\1"; gene_id "\\1.gene":' {output.tmp1} && add_transcript_feature_to_gtf.py {output.tmp1} {output.tmp2} && gffread -O -T -M --cluster-only -o {output.tmp1} {output.tmp2} && sed 's:gene_id ".*; locus ":gene_id ":' {output.tmp1} > {output.gtf} && sleep 30 && set -u"""
 
 rule combine:
      input: my_aligner_samples
      output: os.path.join("Comparisons", "{aligner}", "Combined.gtf")
+     log: os.path.join("logs", "combine.{aligner}.log")
      params:
          temp=os.path.join("Comparisons", "{aligner}", "gtf.temp"),
          my_gtfs=lambda wildcards: " ".join(my_aligner_samples(wildcards))
@@ -139,7 +143,7 @@ rule orig_compare:
      params:
         prefix=os.path.join("Comparisons", "{aligner}", "Original", "{method}"),
         reference=os.path.join("Reference", "reference.gff3")
-     shell: """set +u && ml mikado/1.0.0b10 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""
+     shell: """set +u && ml mikado/1.0.1 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""
 
 rule filter_compare:
      input:
@@ -150,28 +154,29 @@ rule filter_compare:
      params:
         prefix=os.path.join("Comparisons", "{aligner}", "Filtered", "{method}"),
         reference=os.path.join("Reference", "filtered.gff3")
-     shell: """set +u && ml mikado/1.0.0b10 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""   
+     shell: """set +u && ml mikado/1.0.1 && mikado compare -r {params.reference} -p {input.gtf} -l {log} -o {params.prefix} && set -u"""   
 
 rule ref_midx:
      input: os.path.join("Reference", "reference.gff3")
      output:
         midx=os.path.join("Reference", "reference.gff3.midx")
      log: os.path.join("Reference", "index.log")
-     shell: """set +u && ml mikado/1.0.0b10 && mikado compare -r {input} --index -l {log} && set -u"""
+     shell: """set +u && ml mikado/1.0.1 && mikado compare -r {input} --index -l {log} && set -u"""
 
 rule filtered_midx:
      input: os.path.join("Reference", "filtered.gff3")
      output:
         midx=os.path.join("Reference", "filtered.gff3.midx")
      log: os.path.join("Reference", "index.filtered.log")
-     shell: """set +u && ml mikado/1.0.0b10 && mikado compare -r {input} --index -l {log} && set -u"""
+     shell: """set +u && ml mikado/1.0.1 && mikado compare -r {input} --index -l {log} && set -u"""
 
 rule create_filter:
      input:
         gff3=os.path.join("Reference", "reference.gff3"),
 	list=os.path.join("Filter", "final.reconstructable")
+     log: "logs/create_filter.log"
      output: os.path.join("Reference", "filtered.gff3")
-     shell: """set +u && ml mikado/1.0.0b10 && mikado util grep {input.list} {input.gff3} {output} && set -u"""
+     shell: """set +u && ml mikado/1.0.1 && mikado util grep {input.list} {input.gff3} {output} && set -u"""
 
 rule create_list:
      input:
@@ -179,6 +184,7 @@ rule create_list:
 	ali_recon=os.path.join("Filter", "aligners.reconstructable")
      output:
          list=os.path.join("Filter", "final.reconstructable")
+     log: "logs/create_list.log"
      shell: """set +u && cat {input.ali_recon} {input.asm_recon} | sort -u > {output.list}"""
 
 rule create_asm_list:
@@ -187,6 +193,7 @@ rule create_asm_list:
      output: os.path.join("Filter", "assemblers.reconstructable")
      params:
          refmap=os.path.join("Comparisons", "Combined", "Original", "Combined.refmap")
+     log: "logs/create_asm_list.log"
      shell: """set +u && mkdir -p Filter/ && cd Filter/ && if [ ! -s $(basename {params.refmap}) ]; then ln -s ../{params.refmap} .; fi && cat *refmap | awk '$2~"(=|_)"' | cut -f 1,8 | sort -u > assemblers.reconstructable"""
 
 rule compare_self:
@@ -196,7 +203,8 @@ rule compare_self:
          stat=os.path.join("Comparisons", "Self", "{dataset}.stats")
      params:
          gff3=os.path.join("Reference", "{dataset}.gff3")
-     shell: """set +u && mkdir -p Comparisons/Self/ && ml mikado/1.0.0b10 && mikado compare -r {params.gff3} --self -o Comparisons/Self/{wildcards.dataset} --log Comparisons/Self/{wildcards.dataset}.log && set -u"""
+     log: "Comparisons/Self/{dataset}.log"
+     shell: """set +u && mkdir -p Comparisons/Self/ && ml mikado/1.0.1 && mikado compare -r {params.gff3} --self -o Comparisons/Self/{wildcards.dataset} --log Comparisons/Self/{wildcards.dataset}.log && set -u"""
 
 rule compare_internal:
      input:
@@ -205,7 +213,8 @@ rule compare_internal:
          stat=os.path.join("Comparisons", "Internal", "{dataset}.tmap")
      params:
          gff3=os.path.join("Reference", "{dataset}.gff3")
-     shell: """set +u && mkdir -p Comparisons/Self/ && ml mikado/1.0.0b10 && mikado compare -r {params.gff3} --internal -o Comparisons/Internal/{wildcards.dataset} --log Comparisons/Internal/{wildcards.dataset}.log && set -u"""
+     log: "Comparisons/Internal/{dataset}.log"
+     shell: """set +u && mkdir -p Comparisons/Self/ && ml mikado/1.0.1 && mikado compare -r {params.gff3} --internal -o Comparisons/Internal/{wildcards.dataset} --log Comparisons/Internal/{wildcards.dataset}.log && set -u"""
 
 rule create_ali_list:
      input:
@@ -234,7 +243,8 @@ rule create_ali_list:
 rule stats:
     input: os.path.join("Reference", "{dataset}.gff3")
     output: os.path.join("Reference", "{dataset}.stats")
-    shell: """set +u && ml mikado/1.0 && mikado util stats {input} {output}"""
+    log: os.path.join("logs/{dataset}.stat.log")
+    shell: """set +u && ml mikado/1.0.1 && mikado util stats {input} {output}"""
 
 # rule assembly_stats:
 #     input: os.path.join("Assemblies", "{aligner}", "{method}", "results.gtf")

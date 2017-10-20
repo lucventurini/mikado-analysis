@@ -32,6 +32,8 @@ def main():
     parser.add_argument("--title", required=False, default="")
     parser.add_argument("--log", action="store_true", default=False)
     parser.add_argument("--out", required=False, default=None, help="Output file. If unspecified, the script will exit after printing the numbers.")
+    parser.add_argument("--genes", default=False, action="store_true",
+                        help="Flag. If switched on, the gene level will be used instead of the transcript level.")
     # parser.add_argument("refmap", nargs=10, type=argparse.FileType("rt"))
     args = parser.parse_args()
 
@@ -54,18 +56,28 @@ def main():
                     re.sub(".stats$", "", options["methods"][label][aligner][0]))
                 with open(orig_refmap) as refmap:
                     for row in csv.DictReader(refmap, delimiter="\t"):
-                        if row["best_ccode"] in ("=", "_"):
-                            data[(label, aligner)][0].add(row["ref_gene"])
-                        elif row["best_ccode"][0] == "f":
-                            data[(label, aligner)][2].add(row["ref_gene"])
-                        # elif row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
-                        #     data[(label, aligner)][1].add(row["ref_gene"])
+                        if args.genes is True:
+                            if row["best_ccode"] in ("=", "_"):
+                                data[(label, aligner)][0].add(row["ref_gene"])
+                            elif row["best_ccode"][0] == "f":
+                                data[(label, aligner)][2].add(row["ref_gene"])
+                            # elif row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
+                            #     data[(label, aligner)][1].add(row["ref_gene"])
+                        else:
+                            if row["ccode"] in ("=", "_"):
+                                data[(label, aligner)][0].add(row["ref_id"])
+                            elif row["ccode"][0] == "f":
+                                data[(label, aligner)][2].add(row["ref_id"])
                 filtered_refmap = "{}.refmap".format(
                     re.sub(".stats$", "", options["methods"][label][aligner][1]))
                 with open(filtered_refmap) as refmap:
                     for row in csv.DictReader(refmap, delimiter="\t"):
-                        if row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
-                            data[(label, aligner)][1].add(row["ref_gene"])
+                        if args.genes is True:
+                            if row["best_ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
+                                data[(label, aligner)][1].add(row["ref_gene"])
+                        else:
+                            if row["ccode"] in ("NA", "p", "P", "i", "I", "ri", "rI", "X", "x"):
+                                data[(label, aligner)][1].add(row["ref_id"])
                 for num in range(3):
                     data[(label, aligner)][num] = len(data[(label, aligner)][num])
             else:
@@ -141,7 +153,7 @@ def main():
                                         color=colour,
                                         marker=marker,
                                         edgecolor="k",
-                                        s=100)
+                                        s=150)
             handle.get_sketch_params()
             if pos == 0:
                 handles.append(handle)
