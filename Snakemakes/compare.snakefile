@@ -253,7 +253,7 @@ rule create_ali_spec_list:
         prefix=os.path.join("Filter", "{aligner}", "reconstructable"),
 	ss=ss_flag,
 	memory=100000
-    shell: """set +u && ml gcc/5.2.0 bedtools/2.27.0_beta genometools/1.5.9 python/3.5 numpy scipy sklearn blast biopython mikado/1.0 && mkdir -p $(dirname {output}) && python3 ../get_reconstructable_transcripts.py -b {input.bam} -p {input.introns} -o {params.prefix} -r {input.trimmed} {params.ss} --log {log} -gf {input.fai}"""
+    shell: """set +u && ml gcc/5.2.0 bedtools/2.27.0_beta genometools/1.5.9 python/3.5 numpy scipy sklearn blast biopython mikado/1.0 && mkdir -p $(dirname {output}) && python3 ../get_filtered_reference.py -b {input.bam} -p {input.introns} -o {params.prefix} -r {input.trimmed} {params.ss} --log {log} -gf {input.fai}"""
 
 rule compare_self:
      input:

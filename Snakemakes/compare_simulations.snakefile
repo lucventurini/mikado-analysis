@@ -226,7 +226,7 @@ rule create_ali_list:
      log: os.path.join("Filter", "aligners.log")
      params:
          prefix=os.path.join("Filter", "aligners"),
-     shell: """set +u && ml gcc/5.2.0 bedtools/2.27.0_beta genometools/1.5.9 python/3.5 numpy scipy sklearn blast biopython mikado/1.0 && mkdir -p Filter && python3 ../../get_reconstructable_transcripts.py -b {input.bam} -p {input.introns} -o {params.prefix} -r {input.trimmed} --log {log} -gf {input.fai}"""
+     shell: """set +u && ml gcc/5.2.0 bedtools/2.27.0_beta genometools/1.5.9 python/3.5 numpy scipy sklearn blast biopython mikado/1.0 && mkdir -p Filter && python3 ../../get_filtered_reference.py -b {input.bam} -p {input.introns} -o {params.prefix} -r {input.trimmed} --log {log} -gf {input.fai}"""
 
 # rule create_ali_spec_list:
 #     input:
