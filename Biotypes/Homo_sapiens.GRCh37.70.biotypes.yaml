@@ -1,0 +1,100 @@
+snRNA:
+  snRNA: false
+3prime_overlapping_ncrna:
+  3prime_overlapping_ncrna: true
+processed_transcript:
+  TEC: true
+  ambiguous_orf: true
+  antisense: true
+  lincRNA: true
+  non_coding: true
+  processed_transcript: true
+  retained_intron: true
+  sense_intronic: true
+  sense_overlapping: true
+TR_J_gene:
+  TR_J_gene: true
+protein_coding:
+  3prime_overlapping_ncrna: true
+  TEC: true
+  ambiguous_orf: true
+  antisense: false
+  lincRNA: false
+  non_stop_decay: true
+  nonsense_mediated_decay: true
+  processed_transcript: true
+  protein_coding: true
+  retained_intron: true
+  sense_intronic: true
+lincRNA:
+  TEC: true
+  ambiguous_orf: true
+  antisense: true
+  lincRNA: true
+  non_coding: true
+  processed_transcript: true
+  retained_intron: true
+IG_D_gene:
+  IG_D_gene: true
+Mt_rRNA:
+  Mt_rRNA: false
+pseudogene:
+  TEC: false
+  antisense: false
+  lincRNA: false
+  processed_pseudogene: false
+  processed_transcript: false
+  pseudogene: false
+  retained_intron: false
+  transcribed_processed_pseudogene: false
+  transcribed_unprocessed_pseudogene: false
+  unitary_pseudogene: false
+  unprocessed_pseudogene: false
+IG_J_gene:
+  IG_J_gene: true
+snoRNA:
+  snoRNA: false
+sense_overlapping:
+  sense_overlapping: true
+sense_intronic:
+  sense_intronic: true
+antisense:
+  antisense: true
+TR_V_gene:
+  TR_V_gene: true
+TR_V_pseudogene:
+  TR_V_pseudogene: false
+IG_V_pseudogene:
+  IG_V_pseudogene: false
+IG_C_pseudogene:
+  IG_C_pseudogene: false
+non_coding:
+  non_coding: true
+miRNA:
+  miRNA: false
+TR_C_gene:
+  TR_C_gene: true
+processed_pseudogene:
+  processed_pseudogene: false
+IG_J_pseudogene:
+  IG_J_pseudogene: false
+misc_RNA:
+  misc_RNA: false
+IG_V_gene:
+  IG_V_gene: true
+rRNA:
+  rRNA: false
+IG_C_gene:
+  IG_C_gene: true
+polymorphic_pseudogene:
+  nonsense_mediated_decay: false
+  polymorphic_pseudogene: false
+  processed_transcript: false
+  protein_coding: false
+  retained_intron: false
+TR_D_gene:
+  TR_D_gene: true
+TR_J_pseudogene:
+  TR_J_pseudogene: false
+Mt_tRNA:
+  Mt_tRNA: false

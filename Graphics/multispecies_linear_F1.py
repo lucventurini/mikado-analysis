@@ -215,7 +215,7 @@ def main():
                 __axes.spines["left"].set_visible(False)
                 __axes.set_yticks([])
 
-            plot.tick_params(axis='x', which='major', labelsize=8)
+            plot.tick_params(axis='x', which='major', labelsize=12)
 
     div_labels = []
 

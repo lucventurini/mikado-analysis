@@ -5,7 +5,7 @@ from collections import OrderedDict, defaultdict
 import matplotlib.lines as mlines
 import matplotlib.colors
 import matplotlib.cm as cm
-# import csv
+import csv
 import argparse
 from itertools import zip_longest
 import matplotlib.patches as mpatches

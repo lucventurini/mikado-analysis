@@ -1,0 +1,18 @@
+ncRNA:
+  ncRNA: true
+pre_miRNA:
+  miRNA: false
+  pre_miRNA: false
+protein_coding:
+  nontranslated_CDS: true
+  protein_coding: true
+pseudogene:
+  pseudogene: false
+rRNA:
+  rRNA: false
+snoRNA:
+  snoRNA: false
+snRNA:
+  snRNA: false
+tRNA:
+  tRNA: false
