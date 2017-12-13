@@ -109,14 +109,19 @@ def main():
     species = yaml.load(args.species)
 
     names = species.pop("names")
+    categories = species.pop("categories", None)
 
     if len(args.level) == 1:
         ncols = ceil(len([_ for _ in species if _ not in ("categories", "names")]) / 2)
     else:
         ncols = len(species)
 
+    nrows = len(args.level)
+
+    print(nrows, args.level, ncols, species)
+
     figure, axes = plt.subplots(
-        nrows=2,
+        nrows=nrows,
         ncols=ncols,
         dpi=args.dpi,
         figsize=(10 / 2 * ncols, 6 / 2 * ncols))
@@ -140,26 +145,35 @@ def main():
 
     name_ar = []
     # This is tricky .. this should be divided in 2 if there is more than one level
-    categories = species.pop("categories")
-    if len(args.level) == 1:
-        for category in categories:
-            for name in names:
-                print(category, name)
-                key = [_ for _ in species.keys() if isinstance(species[_], dict) and species[_]["name"] == name and species[_]["category"] == category]
-                print(key)
-                assert len(key) == 1
-                key = key.pop()
-                name_ar.append(key)
-        name_ar = np.array(list(grouper(name_ar, ceil(len(species) / 2), None)))
+
+    if categories:
+        if len(args.level) == 1:
+            for category in categories:
+                for name in names:
+                    print(category, name)
+                    key = [_ for _ in species.keys() if isinstance(species[_], dict) and species[_]["name"] == name and species[_]["category"] == category]
+                    print(key)
+                    assert len(key) == 1
+                    key = key.pop()
+                    name_ar.append(key)
+            name_ar = np.array(list(grouper(name_ar, ceil(len(species) / 2), None)))
+        else:
+            for category in categories:
+                for name in names:
+                    assert isinstance(species, dict)
+                    key = [_ for _ in species.keys() if isinstance(species[_], dict) and species[_]["name"] == name and species[_]["category"] == category]
+                    assert len(key) == 1, (key, name, category)
+                    key = key.pop()
+                    name_ar.append(key)
+            name_ar = np.array(list(grouper(name_ar, 2, None)))
     else:
-        for category in categories:
-            for name in names:
-                assert isinstance(species, dict)
-                key = [_ for _ in species.keys() if isinstance(species[_], dict) and species[_]["name"] == name and species[_]["category"] == category]
-                assert len(key) == 1, (key, name, category)
-                key = key.pop()
-                name_ar.append(key)
-        name_ar = np.array(list(grouper(name_ar, 2, None)))
+        for name in names:
+            key = [_ for _ in species.keys() if isinstance(species[_], dict) and species[_]["name"] == name]
+            print(key)
+            assert len(key) == 1
+            key = key.pop()
+            name_ar.append(key)
+        name_ar = np.array([name_ar for _ in range(len(args.level))])
 
     # Dictionary to indicate which line should be taken given the level
     markers = dict()
@@ -167,12 +181,19 @@ def main():
 
     best_marker = "o"
 
-    for xrow, category in enumerate(categories):
+    if categories:
+        cat = categories
+    else:
+        cat = args.level
+
+    print(name_ar)
+    for xrow, category in enumerate(cat):
         for yrow, name in enumerate(names):
-            try:
-                key = name_ar[xrow, yrow]
-            except IndexError:
-                raise IndexError(name_ar, xrow, yrow)
+            # try:
+            #     key = name_ar[xrow, yrow]
+            # except IndexError:
+            #     raise IndexError(name_ar, xrow, yrow)
+            key = name_ar[xrow, yrow]
             if key is None:
                 continue
             plot = axes[xrow, yrow]
@@ -181,7 +202,10 @@ def main():
             if xrow == 0:
                 plot.set_title("${}$".format(names[yrow]), fontsize=15)
             if yrow == 0:
-                plot.set_ylabel(categories[xrow].title(), fontsize=15)
+                if categories:
+                    plot.set_ylabel(categories[xrow].title(), fontsize=15)
+                else:
+                    plot.set_ylabel(args.level[xrow].title(), fontsize=15)
 
             # plot.set_xlabel("Precision", fontsize=10)
             # plot.set_ylabel("Recall", fontsize=10)
